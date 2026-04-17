@@ -1,0 +1,340 @@
+/**
+ * BrainQAClient — HTTP client ke backend brain_qa lokal.
+ *
+ * Default base URL: http://localhost:8765 (bisa di-override via env VITE_BRAIN_QA_URL).
+ * Semua method throw BrainQAError (dengan field `code`) supaya caller bisa handle.
+ *
+ * NOTE: Ini adalah client ke stack SENDIRI (brain_qa serve / FastAPI wrapper).
+ * Jangan ganti dengan panggilan vendor API (Gemini, OpenAI, dsb.) —
+ * lihat AGENTS.md rule "ATURAN KERAS Arsitektur & Inference".
+ */
+
+export const BRAIN_QA_BASE =
+  (import.meta as any).env?.VITE_BRAIN_QA_URL ?? 'http://localhost:8765';
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+export interface Citation {
+  filename: string;
+  snippet: string;
+  score: number;
+}
+
+export interface AskResponse {
+  answer: string;
+  citations: Citation[];
+  persona: string;
+  session_id?: string;
+  confidence?: string;
+}
+
+export interface CorpusDocument {
+  id: string;
+  filename: string;
+  status: 'queued' | 'indexing' | 'ready' | 'failed';
+  uploaded_at: string; // ISO timestamp
+  size_bytes: number;
+}
+
+export interface CorpusListResponse {
+  documents: CorpusDocument[];
+  total_docs: number;
+  index_size_bytes: number;
+  index_capacity_bytes: number;
+}
+
+export interface HealthResponse {
+  ok: boolean;
+  version: string;
+  corpus_doc_count: number;
+  /** SIDIX inference engine (dari GET /health) */
+  status?: string;
+  engine?: string;
+  model_mode?: string;
+  model_ready?: boolean;
+  adapter_path?: string;
+  adapter_fingerprint?: Record<string, unknown>;
+  tools_available?: number;
+  sessions_cached?: number;
+  anon_daily_quota_cap?: number | null;
+  engine_build?: string;
+}
+
+/** Opsi inference untuk /ask dan /ask/stream */
+export interface AskInferenceOpts {
+  corpus_only?: boolean;
+  allow_web_fallback?: boolean;
+  simple_mode?: boolean;
+}
+
+export interface StreamDoneMeta {
+  session_id: string;
+  confidence: string;
+}
+
+/** Respons POST /agent/generate — generate langsung tanpa RAG */
+export interface AgentGenerateResponse {
+  text: string;
+  model: string;
+  mode: string;
+  duration_ms: number;
+}
+
+export interface UploadResponse {
+  id: string;
+  filename: string;
+  status: 'queued';
+}
+
+export type Persona = 'MIGHAN' | 'TOARD' | 'FACH' | 'HAYFAR' | 'INAN';
+
+export class BrainQAError extends Error {
+  constructor(
+    public code: 'network' | 'not_found' | 'server' | 'timeout',
+    message: string,
+  ) {
+    super(message);
+    this.name = 'BrainQAError';
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  timeoutMs = 30_000,
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(`${BRAIN_QA_BASE}${path}`, {
+      ...init,
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new BrainQAError(
+        res.status >= 500 ? 'server' : 'not_found',
+        `brain_qa HTTP ${res.status}: ${text}`,
+      );
+    }
+
+    return (await res.json()) as T;
+  } catch (e) {
+    clearTimeout(timer);
+    if (e instanceof BrainQAError) throw e;
+    if ((e as any)?.name === 'AbortError')
+      throw new BrainQAError('timeout', 'Request timed out');
+    throw new BrainQAError('network', `Network error: ${(e as Error).message}`);
+  }
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/**
+ * GET /health — cek apakah brain_qa server berjalan.
+ */
+export async function checkHealth(): Promise<HealthResponse> {
+  return request<HealthResponse>('/health', {}, 5_000);
+}
+
+/**
+ * POST /agent/generate — generate langsung (LoRA lokal atau mock), tanpa ReAct/RAG.
+ * Timeout panjang: pertama kali load model bisa memakan waktu.
+ */
+export async function agentGenerate(
+  prompt: string,
+  opts?: { max_tokens?: number; temperature?: number; system?: string },
+): Promise<AgentGenerateResponse> {
+  const body: Record<string, unknown> = {
+    prompt,
+    max_tokens: opts?.max_tokens ?? 256,
+    temperature: opts?.temperature ?? 0.7,
+  };
+  if (opts?.system != null) body.system = opts.system;
+
+  return request<AgentGenerateResponse>(
+    '/agent/generate',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    300_000,
+  );
+}
+
+/**
+ * POST /ask — kirim pertanyaan ke brain_qa dengan persona tertentu.
+ * Streaming belum diaktifkan di endpoint ini; gunakan /ask/stream untuk nanti.
+ */
+export async function ask(
+  question: string,
+  persona: Persona = 'MIGHAN',
+  k = 5,
+  opts?: AskInferenceOpts,
+): Promise<AskResponse> {
+  return request<AskResponse>(
+    '/ask',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        persona,
+        k,
+        corpus_only: opts?.corpus_only ?? false,
+        allow_web_fallback: opts?.allow_web_fallback ?? true,
+        simple_mode: opts?.simple_mode ?? false,
+      }),
+    },
+    60_000,
+  );
+}
+
+/**
+ * POST /agent/feedback — suara cepat 👍/👎 untuk sesi chat (telemetri lokal).
+ */
+export async function submitFeedback(
+  sessionId: string,
+  vote: 'up' | 'down',
+): Promise<{ ok: boolean }> {
+  return request('/agent/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId, vote }),
+  });
+}
+
+/**
+ * DELETE /agent/session/{id} — hapus sesi dari cache server (multi-turn / privasi).
+ */
+export async function forgetAgentSession(sessionId: string): Promise<{ ok: boolean; removed?: boolean }> {
+  return request(`/agent/session/${encodeURIComponent(sessionId)}`, { method: 'DELETE' });
+}
+
+/**
+ * GET /corpus — daftar dokumen di knowledge base.
+ */
+export async function listCorpus(): Promise<CorpusListResponse> {
+  return request<CorpusListResponse>('/corpus');
+}
+
+/**
+ * POST /corpus/upload — upload dokumen baru ke knowledge base.
+ * Dokumen masuk status "queued" → brain_qa akan index secara async.
+ */
+export async function uploadDocument(file: File): Promise<UploadResponse> {
+  const form = new FormData();
+  form.append('file', file);
+  return request<UploadResponse>(
+    '/corpus/upload',
+    { method: 'POST', body: form },
+    120_000,
+  );
+}
+
+/**
+ * DELETE /corpus/:id — hapus dokumen dari knowledge base.
+ */
+export async function deleteDocument(id: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>(`/corpus/${id}`, { method: 'DELETE' });
+}
+
+/**
+ * POST /corpus/reindex — trigger reindex corpus background.
+ */
+export async function triggerReindex(): Promise<{ ok: boolean; status: string }> {
+  return request('/corpus/reindex', { method: 'POST' });
+}
+
+/**
+ * GET /corpus/reindex/status — cek status reindex.
+ */
+export interface ReindexStatus {
+  running: boolean;
+  last_at: string | null;
+  chunk_count: number;
+}
+export async function getReindexStatus(): Promise<ReindexStatus> {
+  return request<ReindexStatus>('/corpus/reindex/status');
+}
+
+/**
+ * POST /ask/stream — SSE streaming jawaban token per token.
+ * onToken dipanggil per token, onCitation per citation, onDone saat selesai.
+ */
+export async function askStream(
+  question: string,
+  persona: Persona = 'MIGHAN',
+  k = 5,
+  callbacks: {
+    onToken: (text: string) => void;
+    onCitation: (c: Citation) => void;
+    onDone: (persona: string, meta?: StreamDoneMeta) => void;
+    onError: (msg: string) => void;
+    onMeta?: (meta: StreamDoneMeta) => void;
+  },
+  opts?: AskInferenceOpts,
+): Promise<void> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60_000);
+
+  try {
+    const res = await fetch(`${BRAIN_QA_BASE}/ask/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        persona,
+        k,
+        corpus_only: opts?.corpus_only ?? false,
+        allow_web_fallback: opts?.allow_web_fallback ?? true,
+        simple_mode: opts?.simple_mode ?? false,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (!res.ok || !res.body) {
+      callbacks.onError(`Backend error: ${res.status}`);
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const event = JSON.parse(line.slice(6));
+          if (event.type === 'token') callbacks.onToken(event.text);
+          else if (event.type === 'citation') callbacks.onCitation({ filename: event.filename, snippet: event.snippet, score: 0 });
+          else if (event.type === 'meta') {
+            const sid = String(event.session_id ?? '');
+            callbacks.onMeta?.({ session_id: sid, confidence: String(event.confidence ?? '') });
+          } else if (event.type === 'done') {
+            const sid = String(event.session_id ?? '');
+            callbacks.onDone(event.persona, { session_id: sid, confidence: String(event.confidence ?? '') });
+          } else if (event.type === 'error') callbacks.onError(event.message);
+        } catch { /* skip malformed */ }
+      }
+    }
+  } catch (e) {
+    clearTimeout(timer);
+    callbacks.onError((e as Error).message ?? 'Stream error');
+  }
+}

@@ -1,0 +1,16 @@
+@echo off
+echo Installing SIDIX Agent Runtime dependencies...
+cd /d "D:\MIGHAN Model\apps\brain_qa"
+
+if exist ".venv\Scripts\pip.exe" (
+    .venv\Scripts\pip.exe install fastapi uvicorn httpx
+) else (
+    pip install fastapi uvicorn httpx
+)
+
+echo.
+echo Done! Test server dengan:
+echo   cd "D:\MIGHAN Model\apps\brain_qa"
+echo   .venv\Scripts\python -m brain_qa serve --port 8765
+echo.
+pause

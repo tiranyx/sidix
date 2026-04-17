@@ -1,0 +1,70 @@
+# ============================================================
+# SIDIX — .gitignore
+# Rule: commit kode + corpus publik. JANGAN commit data
+# auto-generated, model weights, private data, secrets.
+# ============================================================
+
+# ── Private & personal (NEVER commit) ───────────────────────
+brain/private/
+brain/SESSION_LOG*.md
+
+# ── Model weights (terlalu besar, taruh di HuggingFace) ─────
+apps/brain_qa/models/
+*.safetensors
+*.bin
+*.gguf
+*.ggml
+sidix*.zip
+sidix*.tar.gz
+
+# ── Runtime data (auto-generated, rebuild dengan: python -m brain_qa index) ──
+apps/brain_qa/.data/
+apps/brain_qa/agent_workspace/
+apps/brain_qa/qa_output.txt
+
+# ── Secrets & config lokal ───────────────────────────────────
+.env
+.env.*
+!.env.sample
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Node / Frontend ──────────────────────────────────────────
+node_modules/
+SIDIX_USER_UI/dist/
+SIDIX_USER_UI/.env
+
+# ── IDE & OS ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── IDE & AI assistants ──────────────────────────────────────
+.cursor/
+.claude/
+
+# ── Notebooks (kaggle pull, output besar) ────────────────────
+notebooks/kaggle_pulled/
+
+# ── Logs & temp ──────────────────────────────────────────────
+*.log
+logs/
+.backups/
+*.tmp
+
