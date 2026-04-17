@@ -1153,6 +1153,312 @@ def create_app() -> "FastAPI":
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
+    # ── World Sensor Endpoints ────────────────────────────────────────────────
+
+    @app.get("/sensor/stats")
+    def sensor_stats():
+        """Status world sensor — seen signals, benchmark, corpus dir."""
+        try:
+            from .world_sensor import get_sensor_engine
+            return get_sensor_engine().stats()
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.post("/sensor/run")
+    def sensor_run(body: dict[str, Any] = {}):
+        """Jalankan world sensor cycle (MCP bridge + arXiv + GitHub)."""
+        sources = body.get("sources", ["mcp_bridge", "arxiv", "github"])
+        dry_run = bool(body.get("dry_run", False))
+        try:
+            from .world_sensor import run_sensors
+            result = run_sensors(sources=sources, dry_run=dry_run)
+            return {"ok": True, "result": result}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sensor/bridge-mcp")
+    def sensor_bridge_mcp():
+        """Bridge D:\\SIDIX\\knowledge → brain_qa corpus."""
+        try:
+            from .world_sensor import bridge_mcp_to_corpus
+            count = bridge_mcp_to_corpus()
+            return {"ok": True, "exported": count}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── Skill Library Endpoints ───────────────────────────────────────────────
+
+    @app.get("/skills/stats")
+    def skills_stats():
+        """Statistik skill library."""
+        try:
+            from .skill_library import get_skill_library
+            return get_skill_library().stats()
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/skills/search")
+    def skills_search(q: str = "", top_k: int = 5):
+        """Search skill relevan untuk query."""
+        try:
+            from .skill_library import get_skill_library
+            lib = get_skill_library()
+            results = lib.search(q, top_k=top_k)
+            return {"ok": True, "skills": [s.to_dict() for s in results]}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/skills/add")
+    def skills_add(body: dict[str, Any]):
+        """Tambah skill baru ke library."""
+        try:
+            from .skill_library import get_skill_library
+            lib = get_skill_library()
+            skill_id = lib.add(
+                name=body.get("name", ""),
+                description=body.get("description", ""),
+                content=body.get("content", ""),
+                skill_type=body.get("skill_type", "code"),
+                domain=body.get("domain", "general"),
+                tags=body.get("tags", []),
+            )
+            return {"ok": True, "id": skill_id}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/skills/seed")
+    def skills_seed():
+        """Seed skill library dengan skill default."""
+        try:
+            from .skill_library import get_skill_library
+            count = get_skill_library().seed_default_skills()
+            return {"ok": True, "seeded": count}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── Experience Engine Endpoints ───────────────────────────────────────────
+
+    @app.get("/experience/stats")
+    def experience_stats():
+        """Statistik experience engine."""
+        try:
+            from .experience_engine import get_experience_engine
+            return get_experience_engine().stats()
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/experience/search")
+    def experience_search(q: str = "", top_k: int = 3):
+        """Search experience relevan (CSDOR pattern matching)."""
+        try:
+            from .experience_engine import get_experience_engine
+            results = get_experience_engine().search(q, top_k=top_k)
+            return {"ok": True, "experiences": results}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/experience/synthesize")
+    def experience_synthesize(body: dict[str, Any]):
+        """Synthesize pola pengalaman untuk query tertentu."""
+        query = str(body.get("query", "")).strip()
+        try:
+            from .experience_engine import get_experience_engine
+            synthesis = get_experience_engine().synthesize(query, top_k=3)
+            return {"ok": True, "synthesis": synthesis}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/experience/ingest-corpus")
+    def experience_ingest_corpus():
+        """Ingest semua research notes ke experience engine."""
+        try:
+            from .experience_engine import get_experience_engine
+            count = get_experience_engine().ingest_from_corpus_dirs()
+            return {"ok": True, "ingested": count}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── Self-Healing Endpoints ────────────────────────────────────────────────
+
+    @app.post("/healing/diagnose")
+    def healing_diagnose(body: dict[str, Any]):
+        """Diagnosa error message dan return root cause + fix suggestion."""
+        error_text = str(body.get("error", "")).strip()
+        if not error_text:
+            raise HTTPException(status_code=400, detail="error field wajib diisi")
+        try:
+            from .self_healing import diagnose_error
+            result = diagnose_error(error_text)
+            return {"ok": True, "diagnosis": result}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/healing/stats")
+    def healing_stats():
+        """Statistik self-healing engine."""
+        try:
+            from .self_healing import get_healing_engine
+            return get_healing_engine().stats()
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/healing/recent")
+    def healing_recent(n: int = 10):
+        """Ambil N diagnosis terbaru."""
+        try:
+            from .self_healing import get_healing_engine
+            return {"ok": True, "diagnoses": get_healing_engine().get_recent_diagnoses(n)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── Curriculum Endpoints ──────────────────────────────────────────────────
+
+    @app.get("/curriculum/progress")
+    def curriculum_progress():
+        """Progress report curriculum SIDIX."""
+        try:
+            from .curriculum import get_curriculum_engine
+            return get_curriculum_engine().progress_report()
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/curriculum/next")
+    def curriculum_next(persona: str = "", max_tasks: int = 5):
+        """Get next tasks yang siap dikerjakan."""
+        try:
+            from .curriculum import get_curriculum_engine
+            tasks = get_curriculum_engine().get_next_tasks(
+                persona=persona or None, max_tasks=max_tasks
+            )
+            return {"ok": True, "tasks": [t.to_dict() for t in tasks]}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── Identity Endpoints ────────────────────────────────────────────────────
+
+    @app.get("/identity/describe")
+    def identity_describe():
+        """SIDIX mendeskripsikan identitasnya sendiri."""
+        try:
+            from .identity import get_identity_engine
+            return {"ok": True, "description": get_identity_engine().describe_self()}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/identity/persona/{name}")
+    def identity_persona(name: str):
+        """Ambil detail persona tertentu."""
+        try:
+            from .identity import PERSONA_MATRIX
+            persona = PERSONA_MATRIX.get(name.upper())
+            if not persona:
+                raise HTTPException(status_code=404, detail=f"Persona {name} tidak ditemukan")
+            return {"ok": True, "persona": persona}
+        except HTTPException:
+            raise
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/identity/route")
+    def identity_route(q: str = ""):
+        """Route pertanyaan ke persona yang paling tepat."""
+        try:
+            from .identity import route_persona
+            return {"ok": True, "persona": route_persona(q), "question": q}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/identity/constitutional-check")
+    def identity_constitutional_check(body: dict[str, Any]):
+        """Check apakah teks melanggar constitutional rules."""
+        text = str(body.get("text", "")).strip()
+        try:
+            from .identity import get_identity_engine
+            violations = get_identity_engine().check_constitutional(text)
+            return {
+                "ok": True,
+                "passes": len(violations) == 0,
+                "violations": violations,
+                "violation_count": len(violations),
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── Social Agent Endpoints ────────────────────────────────────────────────
+
+    @app.get("/social/stats")
+    def social_stats():
+        """Status SIDIX social media agent."""
+        try:
+            from .social_agent import get_social_agent
+            return get_social_agent().stats()
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.post("/social/generate-post")
+    def social_generate_post(body: dict[str, Any] = {}):
+        """Generate konten post untuk sosial media."""
+        try:
+            from .social_agent import get_social_agent
+            content = get_social_agent().generate_post(
+                post_type=body.get("post_type", "insight"),
+                topic=body.get("topic", ""),
+                custom_content=body.get("content", ""),
+            )
+            return {"ok": True, "content": content, "char_count": len(content)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/social/post-threads")
+    def social_post_threads(body: dict[str, Any]):
+        """
+        Post ke Threads. dry_run=true (default) untuk preview saja.
+        Butuh THREADS_ACCESS_TOKEN dan THREADS_USER_ID di .env untuk real post.
+        """
+        content = str(body.get("content", "")).strip()
+        dry_run = bool(body.get("dry_run", True))
+        post_type = body.get("post_type", "insight")
+
+        if not content:
+            raise HTTPException(status_code=400, detail="content wajib diisi")
+
+        try:
+            from .social_agent import get_social_agent
+            result = get_social_agent().post_to_threads(
+                content=content, post_type=post_type, dry_run=dry_run
+            )
+            return result
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/social/learn-reddit")
+    def social_learn_reddit(body: dict[str, Any] = {}):
+        """Fetch dan pelajari top posts dari Reddit (no auth needed)."""
+        try:
+            from .social_agent import get_social_agent
+            count = get_social_agent().learn_from_reddit(
+                max_subreddits=body.get("max_subreddits", 3),
+                posts_per_sub=body.get("posts_per_sub", 5),
+            )
+            return {"ok": True, "learned": count}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/social/autonomous-cycle")
+    def social_autonomous_cycle(body: dict[str, Any] = {}):
+        """
+        Jalankan satu siklus belajar dari sosial media.
+        Reddit selalu jalan. Threads butuh credentials.
+        dry_run=true untuk preview (default).
+        """
+        dry_run = bool(body.get("dry_run", True))
+        try:
+            from .social_agent import get_social_agent
+            result = get_social_agent().autonomous_learning_cycle(dry_run=dry_run)
+            return {"ok": True, "result": result}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     return app
 
 
