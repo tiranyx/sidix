@@ -176,7 +176,8 @@ class AskRequest(BaseModel):
     simple_mode: bool = False
 
 
-# ── LLM generate function (swap di sini saat model siap) ─────────────────────
+# ── LLM generate function ─────────────────────────────────────────────────────
+# Priority: 1) Ollama (local, no vendor)  2) LoRA adapter (GPU)  3) Mock fallback
 
 def _llm_generate(
     prompt: str,
@@ -186,8 +187,29 @@ def _llm_generate(
 ) -> tuple[str, str]:
     """
     Returns (generated_text, mode).
-    mode = "local_lora" jika adapter + bobot + deps OK; selain itu "mock" dengan pesan.
+    mode = "ollama" | "local_lora" | "mock"
+
+    Chain:
+    1. Ollama — local LLM (qwen2.5, llama3, dll) via http://localhost:11434
+    2. LoRA adapter — fine-tuned Qwen2.5-7B (butuh GPU + adapter weights)
+    3. Mock fallback — info cara setup
     """
+    # ── 1. Ollama (prioritas utama) ───────────────────────────────────────────
+    try:
+        from .ollama_llm import ollama_available, ollama_generate
+        if ollama_available():
+            text, mode = ollama_generate(
+                prompt=prompt,
+                system=system,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            if mode == "ollama":
+                return text, "ollama"
+    except Exception:
+        pass
+
+    # ── 2. LoRA adapter (GPU path) ────────────────────────────────────────────
     text, mode = generate_sidix(
         prompt,
         system,
@@ -197,15 +219,18 @@ def _llm_generate(
     if mode == "local_lora":
         return text, mode
 
-    # Fallback mock bila tidak ada bobot / load gagal — tetap respons singkat
-    lines = [
-        text,
-        "",
-        "—",
-        "💡 Tips: letakkan `adapter_model.safetensors` di folder adapter; "
-        "install torch, transformers, peft, accelerate, bitsandbytes; jalankan ulang serve.",
-    ]
-    return "\n".join(lines), "mock"
+    # ── 3. Mock fallback ──────────────────────────────────────────────────────
+    return (
+        "⚠ SIDIX belum terhubung ke LLM.\n\n"
+        "**Cara aktifkan:**\n"
+        "```\n"
+        "# Install Ollama (di VPS/lokal)\n"
+        "curl -fsSL https://ollama.ai/install.sh | sh\n"
+        "ollama pull qwen2.5:7b\n"
+        "```\n"
+        "Setelah itu restart brain_qa, SIDIX langsung bisa ngobrol.",
+        "mock",
+    )
 
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
@@ -283,11 +308,22 @@ def create_app() -> "FastAPI":
             chunk_count = sum(1 for line in chunks_path.read_text(encoding="utf-8").splitlines() if line.strip())
 
         tool_names = [t["name"] for t in list_available_tools()]
+
+        # Ollama status
+        try:
+            from .ollama_llm import ollama_status
+            ollama_info = ollama_status()
+        except Exception:
+            ollama_info = {"available": False}
+
+        effective_mode = "ollama" if ollama_info.get("available") else ("local_lora" if model_ready else "mock")
+
         return {
             # Format baru (agent)
             "status": "ok",
             "engine": "SIDIX Inference Engine v0.1",
-            "model_mode": "local_lora" if model_ready else "mock",
+            "model_mode": effective_mode,
+            "ollama": ollama_info,
             "model_ready": model_ready,
             "adapter_path": str(adapter_path) if adapter_path else "",
             "adapter_fingerprint": adapter_fingerprint(),

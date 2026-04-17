@@ -358,13 +358,39 @@ async def cmd_post(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         log.warning(f"Threads post gagal: {info}")
 
 
+def _is_question(text: str) -> bool:
+    """Deteksi apakah teks adalah pertanyaan yang butuh jawaban."""
+    t = text.lower().strip()
+    # Tanda tanya
+    if "?" in t:
+        return True
+    # Kata tanya Indonesia/Inggris
+    question_words = (
+        "apa", "siapa", "berapa", "kenapa", "mengapa", "bagaimana",
+        "kapan", "dimana", "di mana", "kemana", "bisakah", "apakah",
+        "bolehkah", "tolong", "jelaskan", "ceritakan", "sebutkan",
+        "what", "who", "how", "why", "when", "where", "which", "can you",
+        "tell me", "explain", "describe",
+    )
+    for w in question_words:
+        if t.startswith(w) or f" {w} " in t:
+            return True
+    # Kalimat pendek (<= 5 kata) yang tidak punya subyek jelas → tanya
+    words = t.split()
+    if len(words) <= 5 and not any(c in t for c in [".", "!", ","]):
+        return True
+    return False
+
+
 async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Pesan biasa → SIDIX belajar, tanpa command."""
+    """
+    Pesan biasa → SIDIX jawab JIKA pertanyaan, sekaligus belajar.
+    Kalau bukan pertanyaan → SIDIX simpan sebagai knowledge.
+    """
     if not can_access(update):
         return
     uid = update.effective_user.id
     if is_rate_limited(uid):
-        # Silent — tidak reply agar tidak spam
         return
 
     raw = update.message.text or ""
@@ -378,10 +404,39 @@ async def handle_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠ Pesan ini tidak bisa diproses.")
         return
 
-    log.info(f"Learn input dari {user_label(update)}: {teks[:60]}")
-    ok = sidix_capture(topic="telegram-input", content=teks)
-    ack = "📚 *Sidix, ikut belajar yah dari pojokan* ✓" if ok else "⚠ SIDIX offline, pesan tidak tersimpan"
-    await update.message.reply_text(ack, parse_mode="Markdown", quote=True)
+    log.info(f"Message dari {user_label(update)}: {teks[:60]}")
+
+    # ── SIDIX menjawab kalau pertanyaan ──────────────────────────────────────
+    if _is_question(teks):
+        msg = await update.message.reply_text("🔍 Tanya SIDIX...", quote=True)
+        jawaban = sidix_query(teks)
+        if len(jawaban) > 4000:
+            jawaban = jawaban[:4000] + "\n\n_(terpotong)_"
+
+        # Simpan juga ke corpus (pasangan Q&A)
+        sidix_capture(
+            topic="tanya-jawab-telegram",
+            content=f"Q: {teks}\nA: {jawaban}",
+            source="telegram-public"
+        )
+        await msg.edit_text(f"🧠 *SIDIX:*\n{jawaban}", parse_mode="Markdown")
+
+    # ── SIDIX belajar dari statement / pernyataan ────────────────────────────
+    else:
+        ok = sidix_capture(topic="telegram-input", content=teks)
+        if ok:
+            await update.message.reply_text(
+                "📚 *Sidix, ikut belajar yah dari pojokan* ✓",
+                parse_mode="Markdown",
+                quote=True
+            )
+        else:
+            await update.message.reply_text(
+                "⚠ SIDIX offline, pesan tidak tersimpan\n"
+                "_Coba lagi nanti atau /tanya untuk bertanya_",
+                parse_mode="Markdown",
+                quote=True
+            )
 
 
 async def error_handler(update: object, ctx: ContextTypes.DEFAULT_TYPE):

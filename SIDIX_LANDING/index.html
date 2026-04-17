@@ -1,14 +1,75 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" id="html-root">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SIDIX — Self-Hosted AI Agent</title>
-  <meta name="description" content="Self-hosted AI agent platform — honest, cited, verifiable. Run it yourself. MIT License." />
-  <meta property="og:title" content="SIDIX — Self-Hosted AI Agent" />
-  <meta property="og:description" content="Honest. Cited. Verifiable. Run your own AI agent without giving your data to anyone." />
-  <meta property="og:image" content="/og-image.png" />
+
+  <!-- ═══ PRIMARY SEO ═══ -->
+  <title>SIDIX — Self-Hosted AI Agent | Open Source, No Cloud, MIT License</title>
+  <meta name="description" content="SIDIX is a self-hosted AI agent with epistemic integrity. Honest, cited, verifiable answers. RAG + BM25, ReAct loop, 5 personas. Zero cloud dependency. MIT licensed. Run your own AI — anywhere." />
+  <meta name="keywords" content="self-hosted AI, local AI agent, open source AI, RAG, BM25, epistemic AI, SIDIX, Qwen2.5, QLoRA, fine-tune, MIT license, no cloud AI, AI agent Indonesia, AI tanpa API, AI lokal" />
+  <meta name="author" content="Fahmi Wolhuter" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://sidixlab.com/" />
+
+  <!-- ═══ HREFLANG (bilingual) ═══ -->
+  <link rel="alternate" hreflang="en" href="https://sidixlab.com/" />
+  <link rel="alternate" hreflang="id" href="https://sidixlab.com/" />
+  <link rel="alternate" hreflang="x-default" href="https://sidixlab.com/" />
+
+  <!-- ═══ OPEN GRAPH (Facebook, LinkedIn, WhatsApp, Telegram) ═══ -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sidixlab.com/" />
+  <meta property="og:site_name" content="SIDIX" />
+  <meta property="og:title" content="SIDIX — Self-Hosted AI Agent with Epistemic Integrity" />
+  <meta property="og:description" content="Honest. Cited. Verifiable. Run your own AI agent — no vendor lock-in, no cloud dependency, no hallucination left unlabeled. Free, MIT licensed, open source." />
+  <meta property="og:image" content="https://sidixlab.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="SIDIX — Self-Hosted AI Agent" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="id_ID" />
+
+  <!-- ═══ TWITTER / X CARD ═══ -->
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@sidixlab" />
+  <meta name="twitter:creator" content="@fahmiwol" />
+  <meta name="twitter:title" content="SIDIX — Self-Hosted AI Agent" />
+  <meta name="twitter:description" content="Honest. Cited. Verifiable. Run your own AI — no vendor lock-in, no cloud, no hallucination unlabeled. MIT licensed." />
+  <meta name="twitter:image" content="https://sidixlab.com/og-image.png" />
+
+  <!-- ═══ SCHEMA.ORG JSON-LD ═══ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SIDIX",
+    "alternateName": "SIDIX AI Agent",
+    "description": "Self-hosted AI agent platform with epistemic integrity. Honest, cited, verifiable answers. RAG + BM25, ReAct agent loop, 5 personas, multilingual. Zero cloud dependency. MIT licensed.",
+    "url": "https://sidixlab.com",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Linux, Windows, macOS",
+    "license": "https://opensource.org/licenses/MIT",
+    "codeRepository": "https://github.com/fahmiwol/sidix",
+    "inLanguage": ["en", "id", "ar"],
+    "author": {
+      "@type": "Person",
+      "name": "Fahmi Wolhuter",
+      "url": "https://github.com/fahmiwol"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "sameAs": [
+      "https://github.com/fahmiwol/sidix",
+      "https://www.instagram.com/sidixlab",
+      "https://www.threads.com/@sidixlab"
+    ]
+  }
+  </script>
+
   <link rel="icon" type="image/svg+xml" href="/sidix-logo.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -84,10 +145,21 @@
       <a href="https://github.com/fahmiwol/sidix" target="_blank" rel="noopener" class="hover:text-parchment-100 transition-colors">GitHub</a>
     </div>
 
-    <a href="https://app.sidixlab.com" class="btn-gold text-sm">
-      Try SIDIX
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-    </a>
+    <div class="flex items-center gap-3">
+      <!-- Language toggle -->
+      <button id="lang-btn" onclick="toggleLang()"
+        class="text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+        style="border:1px solid rgba(212,168,83,0.35);color:#D4A853;background:transparent"
+        onmouseover="this.style.background='rgba(212,168,83,0.08)'"
+        onmouseout="this.style.background='transparent'"
+        title="Switch language / Ganti bahasa">
+        EN
+      </button>
+      <a href="https://app.sidixlab.com" class="btn-gold text-sm">
+        <span data-i18n="nav.try">Try SIDIX</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
   </nav>
 
   <div class="relative z-10" style="padding-top: 4rem;">
@@ -95,9 +167,9 @@
     <!-- ═══════════════════ HERO ═══════════════════ -->
     <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 py-24 relative">
       <div class="mb-6 flex items-center gap-2">
-        <span class="badge badge-green">v1.0 · Live</span>
+        <span class="badge badge-green" data-i18n="hero.badge.live">v1.0 · Live</span>
         <span class="badge badge-gold">MIT License</span>
-        <span class="badge badge-gray">Self-Hosted</span>
+        <span class="badge badge-gray" data-i18n="hero.badge.selfhosted">Self-Hosted</span>
       </div>
 
       <div class="relative mb-8">
@@ -110,10 +182,10 @@
       <h1 class="font-display text-5xl md:text-7xl font-bold glow-gold mb-4 tracking-tight" style="font-family:Georgia,serif">
         SIDIX
       </h1>
-      <p class="text-xl md:text-2xl text-parchment-300 font-light mb-3 max-w-2xl">
+      <p class="text-xl md:text-2xl text-parchment-300 font-light mb-3 max-w-2xl" data-i18n="hero.subtitle">
         Self-Hosted AI Agent with Epistemic Integrity
       </p>
-      <p class="text-base text-parchment-500 mb-10 max-w-xl leading-relaxed">
+      <p class="text-base text-parchment-500 mb-10 max-w-xl leading-relaxed" data-i18n="hero.desc">
         Honest. Cited. Verifiable. Run your own AI agent — no vendor lock-in, no cloud dependency, no hallucination left unlabeled.
       </p>
 
@@ -128,6 +200,17 @@
         </a>
         <a href="#quickstart" class="btn-outline text-base px-6 py-3">
           Quick Start (5 min)
+        </a>
+        <a href="https://t.me/sidixlab_bot" target="_blank" rel="noopener"
+           class="btn-outline text-base px-6 py-3 flex items-center gap-2"
+           style="border-color:#2AABEE;color:#2AABEE;"
+           onmouseover="this.style.background='rgba(42,171,238,0.1)'"
+           onmouseout="this.style.background='transparent'">
+          <!-- Telegram logo -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+          </svg>
+          Train SIDIX
         </a>
       </div>
 
@@ -161,9 +244,9 @@
     <section id="features" class="py-24 px-6 max-w-6xl mx-auto">
       <div class="divider mb-16"></div>
       <div class="text-center mb-12">
-        <p class="section-label mb-3">What's inside</p>
-        <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif">Built different, on purpose</h2>
-        <p class="text-parchment-500 mt-3 max-w-xl mx-auto">Every design decision traces back to one goal: an AI agent you can actually trust because you can verify it.</p>
+        <p class="section-label mb-3" data-i18n="features.label">What's inside</p>
+        <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif" data-i18n="features.h2">Built different, on purpose</h2>
+        <p class="text-parchment-500 mt-3 max-w-xl mx-auto" data-i18n="features.desc">Every design decision traces back to one goal: an AI agent you can actually trust because you can verify it.</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -220,7 +303,7 @@
       <div class="divider mb-16"></div>
       <div class="max-w-3xl mx-auto">
         <div class="text-center mb-12">
-          <p class="section-label mb-3">Get running in 5 minutes</p>
+          <p class="section-label mb-3" data-i18n="quickstart.label">Get running in 5 minutes</p>
           <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif">Quick Start</h2>
           <p class="text-parchment-500 mt-3">Python 3.11+ · Node 18+ · 4GB RAM minimum</p>
         </div>
@@ -388,9 +471,9 @@
       <div class="divider mb-16"></div>
       <div class="max-w-5xl mx-auto">
         <div class="text-center mb-12">
-          <p class="section-label mb-3">Open source, built together</p>
-          <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif">Contribute to SIDIX</h2>
-          <p class="text-parchment-500 mt-3 max-w-xl mx-auto">Whether you write code, research, or documentation — every contribution moves the mission forward.</p>
+          <p class="section-label mb-3" data-i18n="contribute.label">Open source, built together</p>
+          <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif" data-i18n="contribute.h2">Contribute to SIDIX</h2>
+          <p class="text-parchment-500 mt-3 max-w-xl mx-auto" data-i18n="contribute.desc">Whether you write code, research, or documentation — every contribution moves the mission forward.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
@@ -429,6 +512,15 @@
             <h3 class="font-bold text-parchment-100 mb-2">Documentation</h3>
             <p class="text-sm text-parchment-500 mb-4">Improve or extend docs. Especially setup guides, architecture notes, and tutorials.</p>
             <a href="https://github.com/fahmiwol/sidix/issues?q=label%3Adocs" target="_blank" rel="noopener" class="text-gold-400 text-xs hover:text-gold-300">See doc tasks →</a>
+          </div>
+          <!-- Telegram Training Card -->
+          <div class="card p-6" style="border-color:rgba(42,171,238,0.2);background:rgba(42,171,238,0.04)">
+            <div class="text-2xl mb-3">✈️</div>
+            <h3 class="font-bold text-parchment-100 mb-2" data-i18n="contribute.telegram.title">Train via Telegram</h3>
+            <p class="text-sm text-parchment-500 mb-4" data-i18n="contribute.telegram.desc">Send knowledge directly to SIDIX through our Telegram bot. Any topic, any language. SIDIX learns from real people.</p>
+            <a href="https://t.me/sidixlab_bot" target="_blank" rel="noopener"
+               class="text-xs font-semibold hover:opacity-80 transition-opacity"
+               style="color:#2AABEE" data-i18n="contribute.telegram.link">Open Telegram Bot →</a>
           </div>
         </div>
 
@@ -515,9 +607,9 @@
 
           <!-- Social -->
           <div>
-            <p class="section-label mb-3">Community</p>
-            <h2 class="font-display text-3xl font-bold text-parchment-100 mb-2" style="font-family:Georgia,serif">Follow Along</h2>
-            <p class="text-parchment-500 text-sm mb-8">Updates, demos, and behind-the-scenes on the build.</p>
+            <p class="section-label mb-3" data-i18n="community.label">Community</p>
+            <h2 class="font-display text-3xl font-bold text-parchment-100 mb-2" style="font-family:Georgia,serif" data-i18n="community.h2">Follow Along</h2>
+            <p class="text-parchment-500 text-sm mb-8" data-i18n="community.desc">Updates, demos, and behind-the-scenes on the build.</p>
 
             <div class="space-y-3">
               <a href="https://github.com/fahmiwol/sidix" target="_blank" rel="noopener" class="social-link">
@@ -546,6 +638,17 @@
                 <div>
                   <p class="text-sm font-semibold text-parchment-100">GitHub Discussions</p>
                   <p class="text-xs text-parchment-500">Q&amp;A · Ideas · Community</p>
+                </div>
+              </a>
+              <!-- Telegram Bot -->
+              <a href="https://t.me/sidixlab_bot" target="_blank" rel="noopener" class="social-link"
+                 style="border-color:rgba(42,171,238,0.25)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:#2AABEE;flex-shrink:0">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                </svg>
+                <div>
+                  <p class="text-sm font-semibold text-parchment-100" data-i18n="community.telegram.title">Telegram Bot — Train SIDIX</p>
+                  <p class="text-xs text-parchment-500" data-i18n="community.telegram.sub">Chat · Ask · Teach SIDIX directly</p>
                 </div>
               </a>
             </div>
@@ -622,5 +725,180 @@
     </footer>
 
   </div><!-- /z-10 -->
+
+  <!-- ═══════════════════ FLOATING SHARE WIDGET ═══════════════════ -->
+  <div id="share-widget" style="position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    <!-- Share buttons (hidden by default) -->
+    <div id="share-menu" style="display:none;flex-direction:column;gap:6px;align-items:flex-end">
+      <!-- Twitter/X -->
+      <a href="#" onclick="shareX();return false;" title="Share on X / Twitter"
+         class="share-btn" style="background:#000;border:1px solid #333;color:#fff">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.261 5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        <span>X / Twitter</span>
+      </a>
+      <!-- LinkedIn -->
+      <a href="#" onclick="shareLinkedIn();return false;" title="Share on LinkedIn"
+         class="share-btn" style="background:#0077b5;border:1px solid #005e8e;color:#fff">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        <span>LinkedIn</span>
+      </a>
+      <!-- WhatsApp -->
+      <a href="#" onclick="shareWhatsApp();return false;" title="Share on WhatsApp"
+         class="share-btn" style="background:#25d366;border:1px solid #1da851;color:#fff">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+        <span>WhatsApp</span>
+      </a>
+      <!-- Telegram -->
+      <a href="#" onclick="shareTelegram();return false;" title="Share on Telegram"
+         class="share-btn" style="background:#2AABEE;border:1px solid #1d90cc;color:#fff">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        <span>Telegram</span>
+      </a>
+      <!-- Copy Link -->
+      <button onclick="copyLink()" title="Copy link"
+              class="share-btn" id="copy-btn" style="background:rgba(46,34,24,0.95);border:1px solid rgba(212,168,83,0.35);color:#D4A853">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="copy-label">Copy Link</span>
+      </button>
+    </div>
+
+    <!-- Toggle share button -->
+    <button onclick="toggleShare()" id="share-fab"
+      title="Share SIDIX"
+      style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#D4A853,#B8924A);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(212,168,83,0.35);transition:transform 0.2s"
+      onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+      <svg id="share-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#120F09" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    </button>
+  </div>
+
+  <style>
+    .share-btn { display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:10px; font-size:0.78rem; font-weight:600; cursor:pointer; text-decoration:none; white-space:nowrap; transition:opacity 0.15s; }
+    .share-btn:hover { opacity:0.88; }
+    #share-menu { animation: shareIn 0.18s ease-out; }
+    @keyframes shareIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+
+  <!-- ═══════════════════ BILINGUAL + SHARE JS ═══════════════════ -->
+  <script>
+  // ── Translations ──────────────────────────────────────────────
+  const LANG_DATA = {
+    en: {
+      'nav.try': 'Try SIDIX',
+      'hero.badge.live': 'v1.0 · Live',
+      'hero.badge.selfhosted': 'Self-Hosted',
+      'hero.subtitle': 'Self-Hosted AI Agent with Epistemic Integrity',
+      'hero.desc': 'Honest. Cited. Verifiable. Run your own AI agent — no vendor lock-in, no cloud dependency, no hallucination left unlabeled.',
+      'features.label': "What's inside",
+      'features.h2': 'Built different, on purpose',
+      'features.desc': 'Every design decision traces back to one goal: an AI agent you can actually trust because you can verify it.',
+      'quickstart.label': 'Get running in 5 minutes',
+      'roadmap.label': "What's done, what's next",
+      'contribute.label': 'Open source, built together',
+      'contribute.h2': 'Contribute to SIDIX',
+      'contribute.desc': 'Whether you write code, research, or documentation — every contribution moves the mission forward.',
+      'contribute.telegram.title': 'Train via Telegram',
+      'contribute.telegram.desc': 'Send knowledge directly to SIDIX through our Telegram bot. Any topic, any language. SIDIX learns from real people.',
+      'contribute.telegram.link': 'Open Telegram Bot →',
+      'community.label': 'Community',
+      'community.h2': 'Follow Along',
+      'community.desc': 'Updates, demos, and behind-the-scenes on the build.',
+      'community.telegram.title': 'Telegram Bot — Train SIDIX',
+      'community.telegram.sub': 'Chat · Ask · Teach SIDIX directly',
+      'newsletter.label': 'Newsletter',
+      'newsletter.h2': 'Stay Updated',
+      'newsletter.desc': 'Release notes, new features, and research updates. No spam. Unsubscribe anytime.',
+      'donate.title': 'Help Keep SIDIX Free',
+      'donate.desc': "SIDIX is MIT-licensed and solo-built. If it's useful to you, a sponsorship helps cover server costs and development time.",
+    },
+    id: {
+      'nav.try': 'Coba SIDIX',
+      'hero.badge.live': 'v1.0 · Aktif',
+      'hero.badge.selfhosted': 'Lokal',
+      'hero.subtitle': 'AI Agent Lokal dengan Integritas Epistemik',
+      'hero.desc': 'Jujur. Terkutip. Terverifikasi. Jalankan AI agent milikmu — bebas vendor, bebas cloud, tanpa halusinasi tak berlabel.',
+      'features.label': 'Ada apa di dalamnya',
+      'features.h2': 'Dibangun berbeda, sengaja',
+      'features.desc': 'Setiap keputusan desain bermuara pada satu tujuan: AI agent yang benar-benar bisa dipercaya karena bisa diverifikasi.',
+      'quickstart.label': 'Jalan dalam 5 menit',
+      'roadmap.label': 'Sudah selesai, selanjutnya apa',
+      'contribute.label': 'Open source, dibangun bersama',
+      'contribute.h2': 'Kontribusi ke SIDIX',
+      'contribute.desc': 'Tulis kode, riset, atau dokumentasi — setiap kontribusi mendorong misi ke depan.',
+      'contribute.telegram.title': 'Ajari via Telegram',
+      'contribute.telegram.desc': 'Kirim pengetahuan langsung ke SIDIX lewat bot Telegram. Topik apa saja, bahasa apa saja. SIDIX belajar dari orang nyata.',
+      'contribute.telegram.link': 'Buka Bot Telegram →',
+      'community.label': 'Komunitas',
+      'community.h2': 'Ikuti Perkembangan',
+      'community.desc': 'Update, demo, dan behind-the-scenes proses pembangunannya.',
+      'community.telegram.title': 'Bot Telegram — Ajari SIDIX',
+      'community.telegram.sub': 'Chat · Tanya · Ajari SIDIX langsung',
+      'newsletter.label': 'Newsletter',
+      'newsletter.h2': 'Tetap Update',
+      'newsletter.desc': 'Catatan rilis, fitur baru, dan update riset. Tanpa spam. Berhenti kapan saja.',
+      'donate.title': 'Bantu SIDIX Tetap Gratis',
+      'donate.desc': 'SIDIX berlisensi MIT dan dibangun solo. Kalau berguna buatmu, sponsor membantu menutup biaya server dan waktu pengembangan.',
+    }
+  };
+
+  let currentLang = localStorage.getItem('sidix-lang') || 'en';
+
+  function applyLang(lang) {
+    currentLang = lang;
+    localStorage.setItem('sidix-lang', lang);
+    document.getElementById('html-root').lang = lang;
+    document.getElementById('lang-btn').textContent = lang === 'en' ? 'ID' : 'EN';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (LANG_DATA[lang][key]) el.innerHTML = LANG_DATA[lang][key];
+    });
+  }
+
+  function toggleLang() {
+    applyLang(currentLang === 'en' ? 'id' : 'en');
+  }
+
+  // Apply saved lang on load
+  document.addEventListener('DOMContentLoaded', () => applyLang(currentLang));
+
+  // ── Share Functions ───────────────────────────────────────────
+  const SHARE_URL = 'https://sidixlab.com';
+  const SHARE_TEXT_EN = 'SIDIX — Self-Hosted AI Agent with Epistemic Integrity. Honest, Cited, Verifiable. MIT licensed, no cloud dependency.';
+  const SHARE_TEXT_ID = 'SIDIX — AI Agent lokal yang jujur, terkutip, dan terverifikasi. MIT license, tanpa cloud, tanpa vendor lock-in.';
+
+  function getShareText() {
+    return currentLang === 'id' ? SHARE_TEXT_ID : SHARE_TEXT_EN;
+  }
+
+  function shareX() {
+    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(SHARE_URL)}&text=${encodeURIComponent(getShareText())}`, '_blank');
+  }
+
+  function shareLinkedIn() {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(SHARE_URL)}`, '_blank');
+  }
+
+  function shareWhatsApp() {
+    window.open(`https://wa.me/?text=${encodeURIComponent(getShareText() + ' ' + SHARE_URL)}`, '_blank');
+  }
+
+  function shareTelegram() {
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(SHARE_URL)}&text=${encodeURIComponent(getShareText())}`, '_blank');
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(SHARE_URL).then(() => {
+      const lbl = document.getElementById('copy-label');
+      lbl.textContent = '✓ Copied!';
+      setTimeout(() => { lbl.textContent = 'Copy Link'; }, 2000);
+    });
+  }
+
+  function toggleShare() {
+    const menu = document.getElementById('share-menu');
+    const isOpen = menu.style.display === 'flex';
+    menu.style.display = isOpen ? 'none' : 'flex';
+    document.getElementById('share-icon').setAttribute('stroke', isOpen ? '#120F09' : '#120F09');
+  }
+  </script>
 </body>
 </html>

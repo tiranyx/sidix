@@ -359,8 +359,12 @@ def _compose_final_answer(
 ) -> tuple[str, list[dict], float, str]:
     """
     Compose jawaban final dari semua observation yang sudah dikumpulkan.
-    Returns (answer_text, citations).
-    Diganti LLM synthesis saat Inference Engine siap.
+    Returns (answer_text, citations, confidence_score, answer_type).
+
+    Pipeline:
+    1. Coba Ollama (local LLM generative) + corpus context sebagai RAG
+    2. Fallback: format corpus results langsung
+    3. Fallback final: "tidak tahu" response
     """
     all_citations: list[dict] = []
     obs_blocks: list[str] = []
@@ -370,7 +374,31 @@ def _compose_final_answer(
             obs_blocks.append(s.observation)
         all_citations.extend(s.action_args.get("_citations", []))
 
-    # Greeting special case
+    # ── Coba Ollama generative (sebelum greeting check) ──────────────────────
+    # Kalau Ollama tersedia: generate jawaban nyata pakai LLM + corpus context
+    try:
+        from .ollama_llm import ollama_available, ollama_generate
+        if ollama_available():
+            # Build corpus context dari semua observation
+            corpus_ctx = "\n\n---\n\n".join(obs_blocks[:3]) if obs_blocks else ""
+            # Determine system context based on persona
+            system_suffix = f"\nPersona aktif: {persona}" if persona else ""
+            text, mode = ollama_generate(
+                prompt=question,
+                corpus_context=corpus_ctx,
+                max_tokens=600 if not simple_mode else 200,
+                temperature=0.7,
+            )
+            if mode == "ollama":
+                import logging as _log
+                _log.getLogger("sidix.react").info(f"Ollama synthesis OK — persona={persona}")
+                return (text, all_citations, 0.85, "fakta")
+    except Exception as _ollama_err:
+        import logging as _log
+        _log.getLogger("sidix.react").warning(f"Ollama synthesis failed: {_ollama_err}")
+    # ── End Ollama block ─────────────────────────────────────────────────────
+
+    # Greeting special case (fallback kalau Ollama off)
     if _GREETING_RE.match(question.strip()):
         return (
             "📋 Fakta\n\n"
@@ -383,6 +411,16 @@ def _compose_final_answer(
         )
 
     if not obs_blocks:
+        # Kalau Ollama off dan tidak ada corpus → tanya tanpa konteks via Ollama
+        try:
+            from .ollama_llm import ollama_available, ollama_generate
+            if ollama_available():
+                text, mode = ollama_generate(prompt=question, max_tokens=400)
+                if mode == "ollama":
+                    return (text, [], 0.6, "opini")
+        except Exception:
+            pass
+
         try:
             from .praxis_runtime import (
                 format_case_frames_for_user,
