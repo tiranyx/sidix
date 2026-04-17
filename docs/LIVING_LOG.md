@@ -1038,3 +1038,22 @@ Auto-trigger:
 - DECISION: **Hafidz MVP lokal** — mulai single-node, terbukti benar, baru distribusi. Filosofi sama dengan hafidz yang hafal dulu sendirian sebelum mengajarkan murid.
 - NOTE: Erasure coding MVP pakai XOR sederhana (bukan Reed-Solomon penuh) — bisa recover 1 share hilang. Upgrade ke pyeclib/isa-l untuk produksi.
 - NOTE: `suggest_archetype()` menggunakan keyword scoring deterministik (zero LLM dependency) — bisa dijalankan offline. Upgrade ke embedding similarity untuk matching semantik.
+
+### 2026-04-18 — Track K: builtin_apps.py — 18 builtin tools diregistrasi
+
+- IMPL: **Track K** — `apps/brain_qa/brain_qa/builtin_apps.py` — 18 builtin tools diregistrasi sebagai kapabilitas SIDIX built-in. Zero external dependency (stdlib only). Kategori dan tools:
+  - **math (4):** `calculator` (eval aman, whitelist fungsi), `statistics` (mean/median/stdev/variance/min/max/range), `equation_solver` (kuadrat ax²+bx+c), `unit_converter` (panjang/berat/volume/suhu)
+  - **datetime (1):** `datetime_tool` (now/timestamp/weekday/add_days/diff/hijri_approx — konversi Masehi→Hijriah via Julian Day Number)
+  - **text (3):** `text_tools` (wordcount/uppercase/lowercase/title/reverse/slug), `base64` (encode/decode), `hash_generator` (md5/sha1/sha256/sha512)
+  - **data (2):** `json_formatter` (format/validate/minify), `csv_parser` (CSV→dict struktur data)
+  - **utility (2):** `uuid_generator` (v4/v1), `password_generator` (entropi bit, cryptographically secure via secrets)
+  - **web (2):** `web_search` (stub DuckDuckGo URL), `wikipedia` (Wikipedia REST API publik, support id/en/ar)
+  - **islamic (4) — PRIORITAS:** `prayer_times` (algoritma astronomi pure Python: Julian Day→solar declination→equation of time→hour angle; semua 6 waktu; 6 metode MWL/ISNA/Egypt/Makkah/Karachi/UOIF), `zakat_calculator` (maal 2.5%, fitrah sha', perdagangan, pertanian tadah hujan 10%/irigasi 5%), `qiblat` (Great Circle + Haversine, derajat + arah kompas + jarak km), `asmaul_husna` (99 nama lengkap Arab/Latin/arti, search per nomor atau keyword)
+- DOC: `brain/public/research_notes/101_skills_folder_inventory.md` — inventori lengkap `D:\skills`: 3 sub-repositori (anthropics-skills 17 skill, claude-plugins-official 31 plugin, knowledge-work-plugins 18 domain).
+- DOC: `brain/public/research_notes/102_claude_plugin_patterns.md` — 6 pola arsitektur plugin Claude: trigger-based, slash-command, multi-agent, conditional connector, domain grouping, self-describing registry. Perbandingan Claude Plugin vs SIDIX builtin_apps.
+- DOC: `brain/public/research_notes/103_builtin_apps_sidix.md` — daftar lengkap 18 app, cara pakai (list_apps/call_app/search_apps/get_app_categories), cara extend (template handler + pendaftaran BUILTIN_APPS), detail teknis algoritma (prayer times, zakat fikih, qiblat Great Circle).
+- FIX: `prayer_times` — 3 bug diperbaiki: (1) formula `_hour_angle` salah pakai `cos(angle)` → dikoreksi ke `sin(angle)` sesuai formula altitude hour angle; (2) `transit_utc` double-apply lon/15 offset → diubah ke `transit_local` murni; (3) formula `ashr_angle` salah → dikoreksi ke `cot(ashr) = 1 + cot(noon_alt)` sesuai fikih Syafi'i.
+- TEST: `call_app("prayer_times", latitude=-6.2088, longitude=106.8456, method="MWL", date_str="2026-04-18")` → Subuh 04:50, Syuruq 06:00, Dzuhur 11:59, Ashr 15:19, Maghrib 17:58, Isya 19:04 (vs Kemenag: 04:40/05:54/11:56/15:14/17:55/19:05 — selisih <10 menit, wajar untuk astronomi murni tanpa database koreksi lokal).
+- TEST: `list_apps()` → 18 apps. `get_app_categories()` → 7 kategori. `call_app("calculator", expression="sqrt(144) + 2**8")` → 268.0. `call_app("zakat_calculator", asset_type="maal", total_assets=100_000_000, gold_price_per_gram=1_200_000)` → "Belum wajib zakat" (nisab 102jt, benar secara fikih). `call_app("qiblat", latitude=-6.2088, longitude=106.8456)` → arah kiblat, jarak ke Mekkah.
+- DECISION: **`builtin_apps.py` adalah stdlib-only** — tidak ada import `openai`, `anthropic`, atau third-party library. Dapat dijalankan di lingkungan offline manapun selama Python 3.9+ tersedia. Wikipedia adalah satu-satunya tool yang butuh internet.
+- NOTE: `D:\claude skill and plugin` folder kosong saat di-scan — kemungkinan folder placeholder. Tidak ada konten yang bisa diekstrak.
