@@ -56,7 +56,7 @@ su - sidix
 
 ```bash
 # Clone repo SIDIX
-git clone https://github.com/YOUR_USERNAME/sidix.git
+git clone https://github.com/fahmiwol/sidix.git
 cd sidix
 
 # Setup environment

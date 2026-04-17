@@ -31,7 +31,7 @@ Git
 # Fork dulu di GitHub, lalu:
 git clone https://github.com/YOUR_USERNAME/sidix.git
 cd sidix
-git remote add upstream https://github.com/ORIGINAL_OWNER/sidix.git
+git remote add upstream https://github.com/fahmiwol/sidix.git
 ```
 
 ### Install backend

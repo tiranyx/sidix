@@ -48,7 +48,7 @@ SIDIX adalah platform AI agent yang berjalan **sepenuhnya di lokal / server kamu
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/sidix.git
+git clone https://github.com/fahmiwol/sidix.git
 cd sidix
 pip install -r apps/brain_qa/requirements.txt
 ```
