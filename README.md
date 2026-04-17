@@ -2,9 +2,9 @@
 
 <div align="center">
 
-**Bahasa Indonesia · العربية · English**
+**Bahasa Indonesia · English · Multilingual**
 
-*Agen AI serbaguna yang jujur, beretika, dan bisa kamu jalankan sendiri.*
+*Self-hosted AI agent — honest, cited, verifiable. Run it yourself.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
@@ -37,6 +37,15 @@ SIDIX adalah platform AI agent yang berjalan **sepenuhnya di lokal / server kamu
 | 🛡️ **Safety Policy (G1)** | Anti-injection, anti-toksik, anti-PII, maqashid guard |
 | 🔧 **Tool Whitelist** | Calculator, search corpus, Wikipedia fallback, sandbox workspace |
 | 📊 **5 Persona** | MIGHAN (Kreatif), TOARD (Perencanaan), FACH (Akademik), HAYFAR (Teknis), INAN (Sederhana) |
+
+---
+
+## Demo
+
+> UI berjalan di `localhost:3000` — backend di `localhost:8765`
+
+<!-- screenshot-placeholder: jalankan `npm run dev` + `python -m brain_qa serve`, lalu screenshot dan replace baris ini -->
+<!-- ![SIDIX UI](docs/assets/screenshot.png) -->
 
 ---
 
