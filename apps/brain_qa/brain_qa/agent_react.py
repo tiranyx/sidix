@@ -740,6 +740,49 @@ def run_react(
         u_profile = None
     # ─────────────────────────────────────────────────────────────────────────
 
+    # ── Experience + Skill enrichment (pre-context injection) ─────────────────
+    # experience_engine → pola dari pengalaman masa lalu yang relevan
+    # skill_library → skill yang bisa dipakai untuk pertanyaan ini
+    _experience_context: str = ""
+    _skill_context: str = ""
+    try:
+        from .experience_engine import get_experience_engine
+        _exp = get_experience_engine()
+        _experience_context = _exp.synthesize(question, top_k=2)
+    except Exception as _exp_err:
+        import logging as _log
+        _log.getLogger(__name__).debug(f"[ExperienceEngine] skip — {_exp_err}")
+
+    try:
+        from .skill_library import get_skill_library
+        _skills = get_skill_library()
+        _skill_context = _skills.search_skills(question, top_k=2)
+    except Exception as _skill_err:
+        import logging as _log
+        _log.getLogger(__name__).debug(f"[SkillLibrary] skip — {_skill_err}")
+
+    # Inject sebagai pre-step observation bila ada konten relevan
+    if _experience_context and "Tidak ditemukan" not in _experience_context:
+        _pre_step_exp = ReActStep(
+            step=-2,
+            thought="[Pre-context] Ambil pola pengalaman relevan dari ExperienceEngine.",
+            action_name="experience_synthesize",
+            action_args={"query": question[:80]},
+            observation=_experience_context[:MAX_TOKENS_PER_OBS],
+        )
+        session.steps.insert(0, _pre_step_exp)
+
+    if _skill_context and "Tidak ditemukan" not in _skill_context:
+        _pre_step_skill = ReActStep(
+            step=-1,
+            thought="[Pre-context] Cari skill relevan dari SkillLibrary.",
+            action_name="skill_search",
+            action_args={"query": question[:80]},
+            observation=_skill_context[:MAX_TOKENS_PER_OBS],
+        )
+        session.steps.insert(len(session.steps), _pre_step_skill)
+    # ─────────────────────────────────────────────────────────────────────────
+
     if verbose:
         print(f"\n{'='*50}")
         print(f"[SIDIX Agent] Session: {session_id}")
