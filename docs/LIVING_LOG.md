@@ -315,6 +315,16 @@ Contoh:
 - UPDATE: `docs/SPRINT_LOG_SIDIX.md` — centang B2, B3, C1, C2, C3; baris indeks sesi sprint UI.
 - TEST: `npm run build` di `SIDIX_USER_UI` → exit 0 (Vite).
 
+### 2026-04-18 — Threads admin integration (sprint 20 menit)
+
+- IMPL: `apps/brain_qa/brain_qa/admin_threads.py` — router FastAPI `/admin/threads/*` (connect/status/disconnect/auto-content). `.env` writer preserve komentar + urutan, refresh `os.environ` in-process.
+- IMPL: `apps/brain_qa/brain_qa/threads_autopost.py` — `pick_topic_seed()` dari 15 research note terbaru, `generate_content(topic_seed, persona)` via Ollama (MIGHAN/INAN voice) + fallback template, `post_to_threads()` 2-step Graph API.
+- UPDATE: `apps/brain_qa/brain_qa/agent_serve.py` — daftarkan router admin_threads via `app.include_router(build_router())` dengan guard try/except.
+- IMPL: `SIDIX_USER_UI/src/main.ts` — tab Settings baru "Threads" (admin only): status card + connect form + tombol "Generate & Post Sekarang". Handler `initThreadsTab()` + `fetchThreadsStatus()`.
+- DECISION: Admin endpoint dipisah dari `social_agent.py` supaya rate limit & posts log tidak tabrakan dengan autonomous learning. Log admin → `.data/threads/posts_log.jsonl`.
+- DOC: `brain/public/research_notes/78_threads_admin_integration.md` — apa/kenapa/bagaimana + 6 limitation (single account, token expiry, file-based rate limit, no preview, bahasa Indonesia-only fallback, belum feedback loop).
+- NOTE: Token Threads disimpan di `apps/brain_qa/.env` (tidak di-commit). Validasi via `graph.threads.net/v1.0/me` sebelum tulis ke disk.
+
 ### 2026-04-18
 
 - DECISION: **Adapter LoRA SIDIX disimpan flat** di `apps/brain_qa/models/sidix-lora-adapter/` (bukan nested `.../sidix-lora-adapter/sidix-lora-adapter/`). `find_adapter_dir()` mendukung keduanya untuk migrasi.
@@ -940,3 +950,80 @@ Auto-trigger:
 - TODO: Wire experience_engine + skill_library ke agent_react.py untuk richer answers
 - TODO: Build harvest.py — capture Q&A pairs dari conversation langsung ke training data
 - TODO: Setup Threads API credentials di VPS .env untuk social posting otomatis
+
+### 2026-04-18 — Reply Harvester (Threads + Reddit → corpus + Q&A)
+
+- IMPL: **`apps/brain_qa/brain_qa/reply_harvester.py`** — modul baru (~470 LOC) untuk auto-fetch reply dari post SIDIX di Threads & Reddit → filter kualitas → tulis markdown ke `brain/public/sources/social_replies/` → konversi ke Alpaca Q&A pair di `.data/harvest/training_pairs/reply_alpaca_{date}.jsonl`. Idempoten via `.data/harvest/replies_seen.json`.
+- IMPL: Fungsi publik: `fetch_threads_replies(post_id, access_token)`, `fetch_reddit_comments(post_url)` (scrape `.json`), `quality_filter(reply, min_length=20, blacklist=[...])`, `convert_reply_to_corpus(reply)`, `convert_to_qa_pair(reply, original_post)`, `harvest_all_recent(hours=24)`, `reply_stats()`.
+- IMPL: Rate limit ketat — `time.sleep(1.0)` Threads, `time.sleep(2.0)` Reddit; `User-Agent: SIDIX-Harvester/1.0`; timeout 15s per request; default blacklist {spam, buy now, promo, iklan, judi, slot, bot reply, bit.ly, onlyfans, porn}.
+- UPDATE: **`apps/brain_qa/brain_qa/serve.py`** — tambah endpoint `POST /harvest/replies/run` (body: hours, threads_token, extra_reddit_urls, min_length, write_qa) dan `GET /harvest/replies/stats`.
+- DECISION: **Post_log.jsonl jadi sumber target** — baca entry `social_agent.post_log.jsonl` yang `created_at` dalam N jam terakhir, auto-dispatch ke fetcher yang sesuai berdasarkan field `platform`.
+- DECISION: **Tanpa vendor AI** — pakai `urllib` murni untuk Threads Graph API + Reddit `.json`; tidak ada dependency ke `openai/anthropic/genai` (konsisten AGENTS.md).
+- DOC: **Research note 81** — `brain/public/research_notes/81_reply_harvester.md` (apa/mengapa/bagaimana + contoh nyata + keterbatasan + trigger manual via curl/cron/REPL).
+- NOTE: Setelah harvest, wajib `POST /corpus/reindex` agar markdown baru masuk BM25.
+- NOTE: Auto-trigger belum built-in scheduler (APScheduler) — sementara cron eksternal VPS: `0 */6 * * * curl -s -X POST http://127.0.0.1:8765/harvest/replies/run -d '{"hours":6}'`.
+
+## 2026-04-18 - Notes to Modules Conversion
+- IMPL: `apps/brain_qa/brain_qa/notes_to_modules.py` - converter research_notes jadi skill/experience/curriculum. Regex + heuristic murni, no LLM.
+- IMPL: 2 endpoint baru di serve.py - POST /notes/convert/run (idempoten), GET /notes/convert/status
+- TEST: run pertama 70 notes discanned - 90 skills added, 52 experiences added, 17 curriculum tasks added. Duration 1.6s.
+- DOC: research note 80_notes_to_modules.md - apa/mengapa/bagaimana/contoh/keterbatasan
+- NOTE: Report tersimpan di .data/notes_conversion_report.json; dedup via MD5 hash di seen_hashes.json
+- DECISION: Rerun aman karena idempoten. Incremental mode (via mtime) ditunda ke iterasi berikut.
+
+### 2026-04-18 (SPRINT — programming_learner module)
+
+- IMPL: `apps/brain_qa/brain_qa/programming_learner.py` — fetcher `fetch_roadmap_sh`, `fetch_github_trending_repos`, `fetch_reddit_problems`; converter ke `CurriculumTask` & `SkillRecord`; `harvest_problems_to_corpus`; orchestrator `run_learning_cycle`; sub-curriculum built-in `PROGRAMMING_BASICS_TASKS` (L0-L1, 11 task) via `seed_programming_basics`.
+- IMPL: 2 endpoint baru di `agent_serve.py` — `POST /learn/programming/run` (body opsional: roadmap_tracks/trending_languages/reddit_subs), `GET /learn/programming/status` (counts kumulatif + last_counts).
+- UPDATE: Sub-curriculum `programming_basics` ditambah ke CurriculumEngine saat endpoint run dipanggil (idempoten by id). L0: variables, loops, functions, data_types, git_basics, terminal_basics. L1: oop_concepts, async_io, http_basics, sql_basics, data_structures.
+- NOTE: HTTP client via stdlib `urllib` (zero new dep), UA `SIDIX-Learner/1.0`, rate limit 1 req/detik. Soft-fail: sumber error → log warning, lanjut sumber lain. GitHub trending via HTML scrape (regex `Box-row`), Reddit via `.rss` Atom (tanpa auth).
+- DOC: `brain/public/research_notes/79_programming_learner.md` — apa/mengapa/bagaimana/contoh/keterbatasan + langkah lanjutan (HN/StackOverflow, README fetcher, topological level).
+- TEST: AST parse (Python) — `programming_learner.py` OK, `agent_serve.py` OK.
+
+### 2026-04-18 - SIDIX Folder Processor (D:\SIDIX -> 4 kapabilitas)
+
+- IMPL: `apps/brain_qa/brain_qa/sidix_folder_processor.py` (~520 LOC) - orchestrator audit -> training pairs -> generative templates -> agent tools -> corpus enrichment. Idempoten via content-hash di `.data/sidix_folder_processed.json` (4 bucket: pairs/templates/tools/corpus).
+- IMPL: `apps/brain_qa/brain_qa/sidix_folder_tools.py` - runtime wrapper: `list_sidix_folder_tools()` + `call_sidix_folder_tool(name, **kwargs)` pakai exec() di namespace terisolasi terhadap snippet hasil extract.
+- UPDATE: `apps/brain_qa/brain_qa/agent_serve.py` - 3 endpoint baru: `POST /sidix-folder/process`, `GET /sidix-folder/audit`, `GET /sidix-folder/stats`.
+- TEST: Run pertama - 50 files audited (48 knowledge + 2 config, ~90 KB), 48 training pairs, 15 generative templates (skill PROMPT), 0 agent tools (queue ini prose murni tanpa fenced Python), 48 corpus items di `brain/public/sources/sidix_folder/`. Rerun -> semua counts = 0 (idempotent PASS).
+- DECISION: Tanpa vendor AI API - parsing pakai regex + heuristic; tag-set + tanda panah jadi sinyal "template". Skip file >50MB dan binary tidak dikenal. PDF pakai pypdf/PyPDF2 kalau tersedia, kalau tidak log path saja. IPYNB: cell markdown + code saja (skip output image).
+- DOC: `brain/public/research_notes/82_sidix_folder_processor.md` - apa/mengapa/bagaimana + contoh konversi 1 file -> 1 pair/1 skill/1 corpus + 5 kapabilitas paling menarik + keterbatasan + next step.
+- NOTE: Perlu `POST /corpus/reindex` setelah run supaya 48 .md baru di `sidix_folder/` masuk BM25.
+- NOTE: `sidix_folder_tools.call_sidix_folder_tool()` masih eksperimental (exec tanpa sandbox) - dipakai hanya untuk snippet trusted dari sesi SIDIX sendiri.
+
+
+### 2026-04-18 - Brain & Docs Synthesizer (sprint 20m - sintesis lintas-dokumen)
+
+- IMPL: `apps/brain_qa/brain_qa/brain_synthesizer.py` - inventori 119 file (77 research notes + 42 docs), knowledge graph 64 nodes / 1148 edges, gap finder (32 gap teridentifikasi), integration proposals (8 total: 5 static + 3 dynamic). CONCEPT_LEXICON ~60 canonical concept + alias matching. Output `.data/brain_docs_index.json` + snapshot di `.data/synth/`.
+- IMPL: `apps/brain_qa/brain_qa/meta_reflection.py` - parse LIVING_LOG per tag (TEST/FIX/IMPL/...), konsep baru dari note mtime, rekomendasi heuristik (ERROR vs FIX, DOC vs IMPL). Output `.data/reflection/weekly_<date>.json`.
+- IMPL: `apps/brain_qa/brain_qa/vision_tracker.py` - 15 pilar visi (IHOS, Sanad, Maqasid, Voyager, CSDOR, Curriculum, Hafidz, World Sensor, Self-Healing, 5 Persona, dll). Overall coverage run pertama: 0.82 (6 covered, 9 partial, 0 missing).
+- IMPL: `apps/brain_qa/brain_qa/knowledge_graph_query.py` - query by concept dengan fuzzy fallback + suggestions saat status missing.
+- UPDATE: `apps/brain_qa/brain_qa/serve.py` - 8 endpoint baru: POST /synthesize/run, GET /synthesize/gaps, GET /synthesize/proposals, GET /knowledge-graph/query, GET /knowledge-graph/concepts, GET /vision/track, POST /reflection/weekly, GET /reflection/latest.
+- TEST: `python -c "from brain_qa.brain_synthesizer import synthesize; ..."` - total_files=119, total_concepts=62, graph_edges=1148, gap_count=32, proposal_count=8. PASS.
+- TEST: `python -c "from brain_qa.vision_tracker import track; ..."` - overall_coverage=0.82. PASS.
+- TEST: `python -c "from brain_qa.meta_reflection import generate_weekly; ..."` - 75 note + 454 living log entries dalam 14 hari terakhir. PASS.
+- DECISION: Heuristik lokal (regex + lexicon + co-occurrence) - TIDAK pakai openai/anthropic/genai. Idempoten via content hash di `.data/synth/processed_hashes.json`.
+
+
+### 2026-04-18 — Sprint Checkpoint + Agent Recovery + SIDIX Teaching
+
+- IMPL: `apps/brain_qa/brain_qa/audio_capability.py` + `audio_seed.py` — Track G selesai. ASR (Whisper/MMS), TTS (F5-TTS/XTTS), MIR (MERT/BEATs), Music Gen (MusicGen/AudioCraft), Multimodal LLM (SALMONN/Qwen2.5-Omni), Tajwid/Qiraat AI. Notes 84-92 ditulis lengkap.
+- IMPL: `apps/brain_qa/brain_qa/conceptual_generalizer.py` — Track H selesai. Extract principle dari contoh → abstract → generalize → cross-domain analogy. Pipeline Qiyas digital.
+- DOC: `brain/public/research_notes/93_conceptual_generalizer.md` — konsep, pipeline, analogi Islam (Qiyas/'illah), integrasi SIDIX, keterbatasan.
+- IMPL: `.data/sprint_progress.md` — Checkpoint file permanen. Mencatat apa yang DONE vs PENDING per track (A-O) agar agent baru tidak mengulang pekerjaan yang sudah selesai saat rate limit hit. **Solusi untuk masalah token terbuang.**
+- DOC: `brain/public/research_notes/114_meta_engineering_riset_ke_modul.md` — Cara Claude me-engineer dari riset ke modul: 6-fase pipeline, 4 design patterns (Processor/Adapter/Capability/Seed), decision framework (skill vs module vs corpus), engineering thinking principles. Analogi sanad/ijazah.
+- IMPL: SIDIX Knowledge MCP — 10 knowledge items langsung di-capture ke D:\SIDIX\knowledge: meta-engineering-pipeline (4/5), module-design-patterns (3/5), skill-vs-module-vs-corpus-decision (3/5), engineering-thinking-principles (3/5), conceptual-generalization-method (4/5), sidix-modules-april-2026 (4/5), physics-laws-mental-models (3/5), chemistry-catalyst-thinking (3/5), learning-methodology-feynman-spaced-rep (4/5), problem-solver-framework (3/5). Total knowledge base: 58 items (dari 48 → +10, target 500).
+- NOTE: Track I (multi_folder_processor.py), J (channel_adapters.py), K (builtin_apps.py), L+M (project_archetypes + hafidz_mvp.py), N+O (knowledge_foundations + problem_solver + permanent_learning + decentralized_data) — 5 agent berjalan paralel di background.
+- NOTE: Kaggle LoRA adapter SELESAI training: /kaggle/working/sidix-lora-adapter — Qwen2.5-7B-Instruct, 641 train samples, 40M trainable params. Perlu download + deploy ke VPS.
+- DOC: `brain/public/research_notes/83_brain_docs_synthesis.md` - apa/mengapa/bagaimana + top 5 gap (Sanad 40x, Kaggle_QLoRA 20x, Supabase 18x, Maqasid 18x, Tabayyun 16x), top 3 integration proposal (Meta-Learner Loop, Epistemic Gate on ReAct, World Sensor -> Curriculum Feeder), keterbatasan (lexicon manual, co-occurrence bukan semantik).
+
+### 2026-04-18 — Track L+M: Project Archetypes + Hafidz MVP
+
+- IMPL: **Track L** — `apps/brain_qa/brain_qa/project_archetypes.py` — 8 archetype proyek nyata dari scan `D:\Projects` ekosistem Tiranyx: `nextjs_fullstack`, `threejs_game_multiplayer`, `fastify_prisma_api`, `hono_edge_api`, `flask_canvas_dashboard`, `nestjs_nextjs_saas`, `fastapi_rag_ai`, `vite_react_ts`. Fungsi: `list_archetypes()`, `get_archetype(name)`, `suggest_archetype(description)` (keyword scoring), `generate_project_plan(archetype, project_name)` (sprint plan otomatis).
+- IMPL: **Track M** — `apps/brain_qa/brain_qa/hafidz_mvp.py` — Hafidz Framework MVP: `ContentAddressedStore` (CAS SHA-256, struktur Git-style prefix), `MerkleLedger` (JSONL append-only, Merkle tree rebuild, Merkle proof), `ErasureCoder` (XOR-based N shares / K required, encode+decode dengan parity recovery), `HafidzNode` (orchestrator: store → CAS + Merkle + erasure; retrieve dengan fallback reconstruct; verify_integrity; get_stats). Handler endpoint: `handle_store`, `handle_retrieve`, `handle_verify`, `handle_stats`. Singleton `get_hafidz_node()`.
+- DOC: **Research note 104** — `brain/public/research_notes/104_projects_folder_archetypes.md` — pemetaan 14 proyek di `D:\Projects`, pattern berulang (Next.js+Prisma dominan, TypeScript everywhere, docs-first recovery), 8 archetype yang diekstrak.
+- DOC: **Research note 105** — `brain/public/research_notes/105_project_archetype_sidix.md` — desain sistem archetype (struktur dict, 4 fungsi publik, skenario SIDIX, mekanisme keyword scoring, cara extend, roadmap endpoint, keterbatasan).
+- DOC: **Research note 106** — `brain/public/research_notes/106_hafidz_mvp_implementation.md` — penjelasan CAS (Git-style), Merkle Tree (analogi sanad Qur'an), Erasure Coding (analogi hafalan tersebar), HafidzNode orchestrator, roadmap P2P (IPFS → libp2p), perbandingan dengan Git/Bitcoin/IPFS.
+- DECISION: **Hafidz MVP lokal** — mulai single-node, terbukti benar, baru distribusi. Filosofi sama dengan hafidz yang hafal dulu sendirian sebelum mengajarkan murid.
+- NOTE: Erasure coding MVP pakai XOR sederhana (bukan Reed-Solomon penuh) — bisa recover 1 share hilang. Upgrade ke pyeclib/isa-l untuk produksi.
+- NOTE: `suggest_archetype()` menggunakan keyword scoring deterministik (zero LLM dependency) — bisa dijalankan offline. Upgrade ke embedding similarity untuk matching semantik.
