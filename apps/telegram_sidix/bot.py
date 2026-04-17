@@ -396,6 +396,11 @@ def main():
         print("❌ TELEGRAM_TOKEN tidak ditemukan di .env")
         return
 
+    # Python 3.10+ tidak auto-create event loop — harus explicit
+    import asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start",  cmd_start))
     app.add_handler(CommandHandler("tanya",  cmd_tanya))
