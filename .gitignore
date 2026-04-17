@@ -68,3 +68,7 @@ logs/
 .backups/
 *.tmp
 
+
+.data/download_adapter.py
+.data/kaggle_upload_cell.py
+.data/kaggle_adapter/
