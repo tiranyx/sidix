@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIDIX — Self-Hosted AI Agent</title>
+  <meta name="description" content="Self-hosted AI agent platform — honest, cited, verifiable. Run it yourself. MIT License." />
+  <meta property="og:title" content="SIDIX — Self-Hosted AI Agent" />
+  <meta property="og:description" content="Honest. Cited. Verifiable. Run your own AI agent without giving your data to anyone." />
+  <meta property="og:image" content="/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23D4A853'/><text y='.9em' font-size='75' font-weight='bold' fill='%231A1510' x='15'>S</text></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gold: { 300: '#E8C97A', 400: '#D4A853', 500: '#B8924A', 600: '#9A7B3E' },
+            warm: { 600: '#3D2F1F', 700: '#2E2218', 800: '#221A10', 900: '#1A1510', 950: '#120F09' },
+            parchment: { 100: '#F0E8D8', 200: '#E8DCC8', 300: '#D8CDB8', 400: '#B8A88A', 500: '#8A7A62' },
+          },
+          fontFamily: { display: ['Georgia', 'Times New Roman', 'serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    * { scroll-behavior: smooth; }
+    body { background-color: #1A1510; color: #E8DCC8; font-family: system-ui, -apple-system, sans-serif; }
+    .glow-gold { text-shadow: 0 0 40px rgba(212,168,83,0.45); }
+    .glow-sm { text-shadow: 0 0 20px rgba(212,168,83,0.3); }
+    .glass { background: rgba(45,34,24,0.55); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(212,168,83,0.12); }
+    .glass-nav { background: rgba(26,21,16,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(212,168,83,0.1); }
+    .card { background: rgba(46,34,24,0.45); border: 1px solid rgba(212,168,83,0.1); border-radius: 1rem; transition: border-color 0.2s, background 0.2s; }
+    .card:hover { border-color: rgba(212,168,83,0.25); background: rgba(46,34,24,0.65); }
+    .btn-gold { background: linear-gradient(135deg, #D4A853 0%, #B8924A 100%); color: #120F09; font-weight: 700; border-radius: 0.75rem; padding: 0.65rem 1.5rem; transition: filter 0.2s, transform 0.1s; display: inline-flex; align-items: center; gap: 0.5rem; }
+    .btn-gold:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-outline { background: transparent; border: 1px solid rgba(212,168,83,0.35); color: #D4A853; border-radius: 0.75rem; padding: 0.65rem 1.5rem; transition: border-color 0.2s, background 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+    .btn-outline:hover { border-color: rgba(212,168,83,0.65); background: rgba(212,168,83,0.06); }
+    .badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; padding: 0.2rem 0.65rem; }
+    .badge-green { background: rgba(110,174,124,0.15); color: #6EAE7C; border: 1px solid rgba(110,174,124,0.25); }
+    .badge-gold { background: rgba(212,168,83,0.12); color: #D4A853; border: 1px solid rgba(212,168,83,0.2); }
+    .badge-gray { background: rgba(138,122,98,0.12); color: #8A7A62; border: 1px solid rgba(138,122,98,0.2); }
+    .triad-icon { width: 3rem; height: 3rem; border-radius: 0.875rem; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+    .section-label { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: #D4A853; }
+    .code-block { background: rgba(18,15,9,0.8); border: 1px solid rgba(212,168,83,0.12); border-radius: 0.75rem; padding: 1.25rem 1.5rem; font-family: 'Courier New', monospace; font-size: 0.8rem; color: #D8CDB8; overflow-x: auto; }
+    .code-block .comment { color: #6A5C48; }
+    .code-block .cmd { color: #D4A853; }
+    .divider { border-top: 1px solid rgba(212,168,83,0.07); }
+    .ambient { position: absolute; border-radius: 50%; filter: blur(120px); pointer-events: none; opacity: 1; }
+    .social-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1.125rem; border-radius: 0.875rem; background: rgba(46,34,24,0.45); border: 1px solid rgba(212,168,83,0.1); transition: border-color 0.2s, background 0.2s; color: #E8DCC8; text-decoration: none; }
+    .social-link:hover { border-color: rgba(212,168,83,0.3); background: rgba(46,34,24,0.7); }
+    .roadmap-item { display: flex; align-items: flex-start; gap: 0.875rem; padding: 0.75rem 0; }
+    .roadmap-item + .roadmap-item { border-top: 1px solid rgba(212,168,83,0.06); }
+    .check { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: rgba(110,174,124,0.2); border: 1px solid rgba(110,174,124,0.4); display: flex; align-items: center; justify-content: center; color: #6EAE7C; flex-shrink: 0; margin-top: 1px; font-size: 0.6rem; }
+    .progress { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: rgba(212,168,83,0.15); border: 1px solid rgba(212,168,83,0.4); display: flex; align-items: center; justify-content: center; color: #D4A853; flex-shrink: 0; margin-top: 1px; font-size: 0.55rem; }
+    .todo { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: transparent; border: 1px solid rgba(138,122,98,0.35); flex-shrink: 0; margin-top: 1px; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #1A1510; }
+    ::-webkit-scrollbar-thumb { background: #3D2F1F; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+  <!-- Ambient glows -->
+  <div class="ambient w-[600px] h-[600px] bg-amber-900/10 top-[-15%] left-[-10%]" style="position:fixed;z-index:0;"></div>
+  <div class="ambient w-[500px] h-[500px] bg-amber-950/10 top-[40%] right-[-10%]" style="position:fixed;z-index:0;"></div>
+
+  <!-- ═══════════════════ NAVBAR ═══════════════════ -->
+  <nav class="glass-nav fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-6 md:px-10">
+    <a href="#" class="flex items-center gap-3 no-underline">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#D4A853,#B8924A)">
+        <span style="font-family:Georgia,serif;font-weight:700;color:#120F09;font-size:1.2rem;line-height:1">S</span>
+      </div>
+      <span style="font-family:Georgia,serif;font-weight:700;font-size:1.1rem" class="glow-sm text-parchment-100">SIDIX</span>
+    </a>
+
+    <div class="hidden md:flex items-center gap-6 text-sm text-parchment-400">
+      <a href="#features" class="hover:text-parchment-100 transition-colors">Features</a>
+      <a href="#quickstart" class="hover:text-parchment-100 transition-colors">Quick Start</a>
+      <a href="#roadmap" class="hover:text-parchment-100 transition-colors">Roadmap</a>
+      <a href="#contribute" class="hover:text-parchment-100 transition-colors">Contribute</a>
+      <a href="https://github.com/fahmiwol/sidix" target="_blank" rel="noopener" class="hover:text-parchment-100 transition-colors">GitHub</a>
+    </div>
+
+    <a href="/app" class="btn-gold text-sm">
+      Try SIDIX
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </nav>
+
+  <div class="relative z-10" style="padding-top: 4rem;">
+
+    <!-- ═══════════════════ HERO ═══════════════════ -->
+    <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 py-24 relative">
+      <div class="mb-6 flex items-center gap-2">
+        <span class="badge badge-green">v1.0 · Live</span>
+        <span class="badge badge-gold">MIT License</span>
+        <span class="badge badge-gray">Self-Hosted</span>
+      </div>
+
+      <div class="relative mb-8">
+        <div class="absolute inset-0 blur-3xl opacity-30 rounded-full" style="background:#D4A853;transform:scale(1.5)"></div>
+        <div class="w-24 h-24 rounded-3xl glass flex items-center justify-center relative z-10">
+          <span style="font-family:Georgia,serif;font-weight:700;color:#D4A853;font-size:3rem;line-height:1">S</span>
+        </div>
+      </div>
+
+      <h1 class="font-display text-5xl md:text-7xl font-bold glow-gold mb-4 tracking-tight" style="font-family:Georgia,serif">
+        SIDIX
+      </h1>
+      <p class="text-xl md:text-2xl text-parchment-300 font-light mb-3 max-w-2xl">
+        Self-Hosted AI Agent with Epistemic Integrity
+      </p>
+      <p class="text-base text-parchment-500 mb-10 max-w-xl leading-relaxed">
+        Honest. Cited. Verifiable. Run your own AI agent — no vendor lock-in, no cloud dependency, no hallucination left unlabeled.
+      </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-4 mb-16">
+        <a href="/app" class="btn-gold text-base px-6 py-3">
+          Try SIDIX
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <a href="https://github.com/fahmiwol/sidix" target="_blank" rel="noopener" class="btn-outline text-base px-6 py-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02.005 2.04.14 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub
+        </a>
+        <a href="#quickstart" class="btn-outline text-base px-6 py-3">
+          Quick Start (5 min)
+        </a>
+      </div>
+
+      <!-- Epistemic Triad -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl w-full">
+        <div class="card p-5 text-left">
+          <div class="triad-icon mb-4" style="background:rgba(212,168,83,0.1);border:1px solid rgba(212,168,83,0.2)">
+            <span style="color:#D4A853">⚖</span>
+          </div>
+          <h3 class="font-bold text-parchment-100 mb-1">Calibrate</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">Every answer carries an epistemic label: <code style="font-size:0.7rem;background:rgba(212,168,83,0.1);padding:0.1rem 0.35rem;border-radius:4px;color:#D4A853">[FACT]</code> <code style="font-size:0.7rem;background:rgba(212,168,83,0.1);padding:0.1rem 0.35rem;border-radius:4px;color:#D4A853">[OPINION]</code> <code style="font-size:0.7rem;background:rgba(212,168,83,0.1);padding:0.1rem 0.35rem;border-radius:4px;color:#D4A853">[UNKNOWN]</code></p>
+        </div>
+        <div class="card p-5 text-left">
+          <div class="triad-icon mb-4" style="background:rgba(110,174,124,0.1);border:1px solid rgba(110,174,124,0.2)">
+            <span style="color:#6EAE7C">🔗</span>
+          </div>
+          <h3 class="font-bold text-parchment-100 mb-1">Trace</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">Every claim has a traceable source chain — auditable, verifiable, no ghost citations.</p>
+        </div>
+        <div class="card p-5 text-left">
+          <div class="triad-icon mb-4" style="background:rgba(107,148,196,0.1);border:1px solid rgba(107,148,196,0.2)">
+            <span style="color:#6B94C4">🔎</span>
+          </div>
+          <h3 class="font-bold text-parchment-100 mb-1">Scrutinize</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">Answers pass an epistemological filter before they reach you. Skepticism is a feature.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ FEATURES ═══════════════════ -->
+    <section id="features" class="py-24 px-6 max-w-6xl mx-auto">
+      <div class="divider mb-16"></div>
+      <div class="text-center mb-12">
+        <p class="section-label mb-3">What's inside</p>
+        <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif">Built different, on purpose</h2>
+        <p class="text-parchment-500 mt-3 max-w-xl mx-auto">Every design decision traces back to one goal: an AI agent you can actually trust because you can verify it.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div class="card p-6">
+          <div class="text-2xl mb-3">🧠</div>
+          <h3 class="font-bold text-parchment-100 mb-2">RAG + BM25 Retriever</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">Search your local corpus without embedding API calls. BM25 + dense retrieval, fully offline.</p>
+        </div>
+        <div class="card p-6">
+          <div class="text-2xl mb-3">🔄</div>
+          <h3 class="font-bold text-parchment-100 mb-2">ReAct Agent Loop</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">Reason → Act → Observe → repeat. Grounded answers through iterative tool use, not single-shot guessing.</p>
+        </div>
+        <div class="card p-6">
+          <div class="text-2xl mb-3">🌍</div>
+          <h3 class="font-bold text-parchment-100 mb-2">Multilingual Native</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">Bahasa Indonesia · Arabic · English — plus Javanese, Sundanese. Automatic language detection.</p>
+        </div>
+        <div class="card p-6">
+          <div class="text-2xl mb-3">🎯</div>
+          <h3 class="font-bold text-parchment-100 mb-2">User Intelligence</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">Auto-detects language, literacy level, intent, and cultural context. Answers calibrated to the reader, not a generic profile.</p>
+        </div>
+        <div class="card p-6">
+          <div class="text-2xl mb-3">📊</div>
+          <h3 class="font-bold text-parchment-100 mb-2">5 Personas</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">MIGHAN (Creative) · TOARD (Planning) · FACH (Academic) · HAYFAR (Technical) · INAN (Simple). One brain, five voices.</p>
+        </div>
+        <div class="card p-6">
+          <div class="text-2xl mb-3">🛡️</div>
+          <h3 class="font-bold text-parchment-100 mb-2">Safety Policy G1</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">Anti-injection, anti-toxic, anti-PII guard. Tool execution is whitelisted — OFF by default, explicit permission required.</p>
+        </div>
+        <div class="card p-6">
+          <div class="text-2xl mb-3">🔧</div>
+          <h3 class="font-bold text-parchment-100 mb-2">Fine-Tuned Model</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">Qwen2.5-7B + QLoRA (r=16, 40M trainable params). 713 Q&A trilingual dataset. 84 min Kaggle T4 training.</p>
+        </div>
+        <div class="card p-6">
+          <div class="text-2xl mb-3">🔒</div>
+          <h3 class="font-bold text-parchment-100 mb-2">Zero Cloud Dependency</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">No OpenAI, no Anthropic, no Gemini API by default. Your data never leaves your machine without your explicit consent.</p>
+        </div>
+        <div class="card p-6">
+          <div class="text-2xl mb-3">📚</div>
+          <h3 class="font-bold text-parchment-100 mb-2">50+ Research Notes</h3>
+          <p class="text-sm text-parchment-500 leading-relaxed">AI/ML, Coding, Web, Mobile, Game Dev, Linguistics, Visual AI — growing corpus, community-extensible.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ QUICK START ═══════════════════ -->
+    <section id="quickstart" class="py-24 px-6">
+      <div class="divider mb-16"></div>
+      <div class="max-w-3xl mx-auto">
+        <div class="text-center mb-12">
+          <p class="section-label mb-3">Get running in 5 minutes</p>
+          <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif">Quick Start</h2>
+          <p class="text-parchment-500 mt-3">Python 3.11+ · Node 18+ · 4GB RAM minimum</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <p class="text-xs text-parchment-500 uppercase tracking-widest font-bold mb-2">1 · Clone &amp; Install</p>
+            <div class="code-block">
+              <span class="comment"># Clone the repo</span><br/>
+              <span class="cmd">git clone</span> https://github.com/fahmiwol/sidix.git<br/>
+              <span class="cmd">cd</span> sidix<br/>
+              <span class="cmd">pip install</span> -r apps/brain_qa/requirements.txt
+            </div>
+          </div>
+          <div>
+            <p class="text-xs text-parchment-500 uppercase tracking-widest font-bold mb-2">2 · Build Index</p>
+            <div class="code-block">
+              <span class="cmd">cd</span> apps/brain_qa<br/>
+              <span class="cmd">python</span> -m brain_qa index
+            </div>
+          </div>
+          <div>
+            <p class="text-xs text-parchment-500 uppercase tracking-widest font-bold mb-2">3 · Run</p>
+            <div class="code-block">
+              <span class="comment"># Terminal 1 — Backend API (port 8765)</span><br/>
+              <span class="cmd">python</span> -m brain_qa serve<br/><br/>
+              <span class="comment"># Terminal 2 — UI (port 3000)</span><br/>
+              <span class="cmd">cd</span> ../../SIDIX_USER_UI<br/>
+              <span class="cmd">npm install &amp;&amp; npm run dev</span>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs text-parchment-500 uppercase tracking-widest font-bold mb-2">4 · Ask</p>
+            <div class="code-block">
+              <span class="comment"># CLI</span><br/>
+              <span class="cmd">python</span> -m brain_qa ask <span style="color:#B8A88A">"What is RAG?"</span><br/><br/>
+              <span class="comment"># Or open browser: http://localhost:3000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 text-center">
+          <a href="https://github.com/fahmiwol/sidix/blob/main/docs/LAUNCH_V1.md" target="_blank" rel="noopener" class="btn-outline text-sm">
+            Full Documentation →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ ROADMAP ═══════════════════ -->
+    <section id="roadmap" class="py-24 px-6">
+      <div class="divider mb-16"></div>
+      <div class="max-w-3xl mx-auto">
+        <div class="text-center mb-12">
+          <p class="section-label mb-3">What's done, what's next</p>
+          <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif">Roadmap</h2>
+          <p class="text-parchment-500 mt-3">
+            Live status ·
+            <a href="https://github.com/fahmiwol/sidix/issues" target="_blank" rel="noopener" class="text-gold-400 hover:text-gold-300">See all issues</a>
+          </p>
+        </div>
+
+        <div class="card p-6">
+          <p class="section-label mb-4">Completed ✓</p>
+          <div>
+            <div class="roadmap-item">
+              <div class="check">✓</div>
+              <div>
+                <p class="text-sm font-medium text-parchment-200">RAG + BM25 Retriever</p>
+                <p class="text-xs text-parchment-500">Local corpus search without API dependency</p>
+              </div>
+            </div>
+            <div class="roadmap-item">
+              <div class="check">✓</div>
+              <div>
+                <p class="text-sm font-medium text-parchment-200">ReAct Agent Loop</p>
+                <p class="text-xs text-parchment-500">Multi-step reasoning with tool use</p>
+              </div>
+            </div>
+            <div class="roadmap-item">
+              <div class="check">✓</div>
+              <div>
+                <p class="text-sm font-medium text-parchment-200">Islamic Epistemology Engine</p>
+                <p class="text-xs text-parchment-500">Maqasid 5-axis + Sanad validator + Constitutional check</p>
+              </div>
+            </div>
+            <div class="roadmap-item">
+              <div class="check">✓</div>
+              <div>
+                <p class="text-sm font-medium text-parchment-200">Fine-tune v1 (Qwen2.5-7B QLoRA)</p>
+                <p class="text-xs text-parchment-500">713 Q&amp;A trilingual dataset on Kaggle T4</p>
+              </div>
+            </div>
+            <div class="roadmap-item">
+              <div class="check">✓</div>
+              <div>
+                <p class="text-sm font-medium text-parchment-200">50+ Research Notes Corpus</p>
+                <p class="text-xs text-parchment-500">AI/ML, Coding, Web, Mobile, Game, Linguistics, Visual AI</p>
+              </div>
+            </div>
+            <div class="roadmap-item">
+              <div class="check">✓</div>
+              <div>
+                <p class="text-sm font-medium text-parchment-200">Hafidz Ledger (Merkle tamper-evident log)</p>
+                <p class="text-xs text-parchment-500">Append-only verifiable corpus log</p>
+              </div>
+            </div>
+          </div>
+
+          <p class="section-label mt-8 mb-4">In Progress</p>
+          <div>
+            <div class="roadmap-item">
+              <div class="progress">▶</div>
+              <div>
+                <p class="text-sm font-medium text-parchment-200">GPU Inference Integration</p>
+                <p class="text-xs text-parchment-500">Qwen2.5-7B + PeftModel local inference</p>
+              </div>
+              <span class="badge badge-gold ml-auto flex-shrink-0">Active</span>
+            </div>
+            <div class="roadmap-item">
+              <div class="progress">▶</div>
+              <div>
+                <p class="text-sm font-medium text-parchment-200">Docker Deployment</p>
+                <p class="text-xs text-parchment-500">VPS-ready container, sidixlab.com live</p>
+              </div>
+              <span class="badge badge-gold ml-auto flex-shrink-0">Active</span>
+            </div>
+          </div>
+
+          <p class="section-label mt-8 mb-4">Planned</p>
+          <div>
+            <div class="roadmap-item">
+              <div class="todo"></div>
+              <div><p class="text-sm text-parchment-400">Streaming SSE fully wired to epistemology engine</p></div>
+            </div>
+            <div class="roadmap-item">
+              <div class="todo"></div>
+              <div><p class="text-sm text-parchment-400">Fine-tune v2 (expanded corpus)</p></div>
+            </div>
+            <div class="roadmap-item">
+              <div class="todo"></div>
+              <div><p class="text-sm text-parchment-400">Vision AI (LLaVA / Qwen-VL caption pipeline)</p></div>
+            </div>
+            <div class="roadmap-item">
+              <div class="todo"></div>
+              <div><p class="text-sm text-parchment-400">Distributed Hafidz sync (P2P corpus nodes)</p></div>
+            </div>
+            <div class="roadmap-item">
+              <div class="todo"></div>
+              <div><p class="text-sm text-parchment-400">Mobile app</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 text-center">
+          <a href="https://github.com/fahmiwol/sidix/issues/new?labels=feature-request" target="_blank" rel="noopener" class="btn-outline text-sm">
+            Request a Feature →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ CONTRIBUTE ═══════════════════ -->
+    <section id="contribute" class="py-24 px-6">
+      <div class="divider mb-16"></div>
+      <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-12">
+          <p class="section-label mb-3">Open source, built together</p>
+          <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif">Contribute to SIDIX</h2>
+          <p class="text-parchment-500 mt-3 max-w-xl mx-auto">Whether you write code, research, or documentation — every contribution moves the mission forward.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+          <div class="card p-6">
+            <div class="text-2xl mb-3">📚</div>
+            <h3 class="font-bold text-parchment-100 mb-2">Research Notes</h3>
+            <p class="text-sm text-parchment-500 mb-4">Add topics to <code style="font-size:0.7rem;color:#D4A853">brain/public/research_notes/</code>. Any domain welcome.</p>
+            <a href="https://github.com/fahmiwol/sidix/blob/main/CONTRIBUTING.md#research-notes" target="_blank" rel="noopener" class="text-gold-400 text-xs hover:text-gold-300">Contribute a note →</a>
+          </div>
+          <div class="card p-6">
+            <div class="text-2xl mb-3">🧪</div>
+            <h3 class="font-bold text-parchment-100 mb-2">Test Cases</h3>
+            <p class="text-sm text-parchment-500 mb-4">Add tests to <code style="font-size:0.7rem;color:#D4A853">tests/</code> or <code style="font-size:0.7rem;color:#D4A853">apps/brain_qa/tests/</code>.</p>
+            <a href="https://github.com/fahmiwol/sidix/issues?q=label%3Atest" target="_blank" rel="noopener" class="text-gold-400 text-xs hover:text-gold-300">Open test issues →</a>
+          </div>
+          <div class="card p-6">
+            <div class="text-2xl mb-3">🌐</div>
+            <h3 class="font-bold text-parchment-100 mb-2">Translations</h3>
+            <p class="text-sm text-parchment-500 mb-4">Help expand corpus coverage in more languages. Indonesian, English, Arabic, and beyond.</p>
+            <a href="https://github.com/fahmiwol/sidix/issues?q=label%3Atranslation" target="_blank" rel="noopener" class="text-gold-400 text-xs hover:text-gold-300">See translation tasks →</a>
+          </div>
+          <div class="card p-6">
+            <div class="text-2xl mb-3">🔧</div>
+            <h3 class="font-bold text-parchment-100 mb-2">New Tools</h3>
+            <p class="text-sm text-parchment-500 mb-4">Add agent tools to <code style="font-size:0.7rem;color:#D4A853">agent_tools.py</code>. Whitelisted, sandboxed by default.</p>
+            <a href="https://github.com/fahmiwol/sidix/issues?q=label%3Atools" target="_blank" rel="noopener" class="text-gold-400 text-xs hover:text-gold-300">See tool requests →</a>
+          </div>
+          <div class="card p-6">
+            <div class="text-2xl mb-3">🎨</div>
+            <h3 class="font-bold text-parchment-100 mb-2">UI/UX</h3>
+            <p class="text-sm text-parchment-500 mb-4">Improve <code style="font-size:0.7rem;color:#D4A853">SIDIX_USER_UI/</code>. Vite + TypeScript + Tailwind.</p>
+            <a href="https://github.com/fahmiwol/sidix/issues?q=label%3Aui" target="_blank" rel="noopener" class="text-gold-400 text-xs hover:text-gold-300">See UI issues →</a>
+          </div>
+          <div class="card p-6">
+            <div class="text-2xl mb-3">📖</div>
+            <h3 class="font-bold text-parchment-100 mb-2">Documentation</h3>
+            <p class="text-sm text-parchment-500 mb-4">Improve or extend docs. Especially setup guides, architecture notes, and tutorials.</p>
+            <a href="https://github.com/fahmiwol/sidix/issues?q=label%3Adocs" target="_blank" rel="noopener" class="text-gold-400 text-xs hover:text-gold-300">See doc tasks →</a>
+          </div>
+        </div>
+
+        <div class="card p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <h3 class="font-bold text-parchment-100 mb-1">Ready to contribute?</h3>
+            <p class="text-sm text-parchment-500">Read our contribution guide, check open issues, and open your first PR.</p>
+          </div>
+          <div class="flex gap-3 flex-shrink-0">
+            <a href="https://github.com/fahmiwol/sidix/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener" class="btn-outline text-sm">Read Guide</a>
+            <a href="https://github.com/fahmiwol/sidix/issues?q=label%3A%22good+first+issue%22" target="_blank" rel="noopener" class="btn-gold text-sm">Good First Issues</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ STATUS & FEEDBACK ═══════════════════ -->
+    <section id="status" class="py-24 px-6">
+      <div class="divider mb-16"></div>
+      <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-12">
+          <p class="section-label mb-3">Stay in the loop</p>
+          <h2 class="font-display text-3xl md:text-4xl font-bold text-parchment-100" style="font-family:Georgia,serif">Project Status</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          <a href="https://github.com/fahmiwol/sidix/issues?q=label%3Abug" target="_blank" rel="noopener" class="card p-5 text-center hover:no-underline block">
+            <div class="text-2xl mb-2">🐛</div>
+            <p class="font-bold text-parchment-100 text-sm">Bug Reports</p>
+            <p class="text-xs text-parchment-500 mt-1">Report issues & track fixes</p>
+          </a>
+          <a href="https://github.com/fahmiwol/sidix/issues/new?labels=feature-request&template=feature_request.md" target="_blank" rel="noopener" class="card p-5 text-center hover:no-underline block">
+            <div class="text-2xl mb-2">💡</div>
+            <p class="font-bold text-parchment-100 text-sm">Feature Requests</p>
+            <p class="text-xs text-parchment-500 mt-1">Suggest new capabilities</p>
+          </a>
+          <a href="https://github.com/fahmiwol/sidix/discussions" target="_blank" rel="noopener" class="card p-5 text-center hover:no-underline block">
+            <div class="text-2xl mb-2">💬</div>
+            <p class="font-bold text-parchment-100 text-sm">Discussions</p>
+            <p class="text-xs text-parchment-500 mt-1">Ideas, Q&amp;A, community</p>
+          </a>
+          <a href="https://github.com/fahmiwol/sidix/projects" target="_blank" rel="noopener" class="card p-5 text-center hover:no-underline block">
+            <div class="text-2xl mb-2">📋</div>
+            <p class="font-bold text-parchment-100 text-sm">Backlog</p>
+            <p class="text-xs text-parchment-500 mt-1">Full project board</p>
+          </a>
+        </div>
+
+        <!-- Contact / Feedback form -->
+        <div class="card p-8">
+          <h3 class="font-bold text-parchment-100 mb-1">Send a Message</h3>
+          <p class="text-sm text-parchment-500 mb-6">Feedback, questions, partnership ideas — we read every message.</p>
+          <form action="https://formspree.io/f/REPLACE_WITH_FORMSPREE_ID" method="POST" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input type="text" name="name" placeholder="Your name"
+                class="w-full bg-warm-800 border border-warm-600 text-parchment-200 rounded-xl px-4 py-3 text-sm
+                       focus:outline-none focus:ring-1 focus:ring-gold-500/40 placeholder:text-parchment-500" />
+              <input type="email" name="email" placeholder="your@email.com"
+                class="w-full bg-warm-800 border border-warm-600 text-parchment-200 rounded-xl px-4 py-3 text-sm
+                       focus:outline-none focus:ring-1 focus:ring-gold-500/40 placeholder:text-parchment-500" />
+            </div>
+            <select name="type" class="w-full bg-warm-800 border border-warm-600 text-parchment-400 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500/40">
+              <option value="">Type of message…</option>
+              <option value="feedback">General Feedback</option>
+              <option value="bug">Bug Report</option>
+              <option value="feature">Feature Request</option>
+              <option value="partnership">Partnership / Collaboration</option>
+              <option value="other">Other</option>
+            </select>
+            <textarea name="message" rows="4" placeholder="Your message…"
+              class="w-full bg-warm-800 border border-warm-600 text-parchment-200 rounded-xl px-4 py-3 text-sm
+                     focus:outline-none focus:ring-1 focus:ring-gold-500/40 placeholder:text-parchment-500 resize-none"></textarea>
+            <button type="submit" class="btn-gold text-sm px-6 py-2.5">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ COMMUNITY & NEWSLETTER ═══════════════════ -->
+    <section id="community" class="py-24 px-6">
+      <div class="divider mb-16"></div>
+      <div class="max-w-4xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+
+          <!-- Social -->
+          <div>
+            <p class="section-label mb-3">Community</p>
+            <h2 class="font-display text-3xl font-bold text-parchment-100 mb-2" style="font-family:Georgia,serif">Follow Along</h2>
+            <p class="text-parchment-500 text-sm mb-8">Updates, demos, and behind-the-scenes on the build.</p>
+
+            <div class="space-y-3">
+              <a href="https://github.com/fahmiwol/sidix" target="_blank" rel="noopener" class="social-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-parchment-300 flex-shrink-0"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02.005 2.04.14 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                <div>
+                  <p class="text-sm font-semibold text-parchment-100">GitHub</p>
+                  <p class="text-xs text-parchment-500">fahmiwol/sidix · Star &amp; Watch</p>
+                </div>
+              </a>
+              <a href="https://www.instagram.com/sidixlab" target="_blank" rel="noopener" class="social-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-parchment-300 flex-shrink-0"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+                <div>
+                  <p class="text-sm font-semibold text-parchment-100">Instagram</p>
+                  <p class="text-xs text-parchment-500">@sidixlab</p>
+                </div>
+              </a>
+              <a href="https://www.threads.com/@sidixlab" target="_blank" rel="noopener" class="social-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-parchment-300 flex-shrink-0"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.5 12.068c0-3.604.865-6.5 2.575-8.6 1.774-2.178 4.46-3.348 7.975-3.468C14.85-.108 18.036 1.2 19.977 3.5c1.793 2.117 2.723 5.12 2.532 8.553l.002.007c-.066 1.146-.36 2.23-.874 3.22l.004.004a10.35 10.35 0 0 1-1.878 2.717c-1.636 1.71-3.662 2.594-5.85 2.594-.08 0-.158-.002-.236-.004-.74-.02-1.447-.186-2.094-.476a5.127 5.127 0 0 1-1.617-1.12 4.18 4.18 0 0 1-1.017-1.74c-.19-.67-.197-1.394-.02-2.12.27-1.102 1.007-1.967 2.063-2.44.81-.363 1.733-.428 2.605-.198l.009.003c.618.17 1.103.55 1.342 1.034.168.337.2.71.087 1.054-.117.363-.382.654-.73.79a1.47 1.47 0 0 1-.95.044c-.3-.087-.534-.285-.63-.54-.085-.228-.053-.48.087-.677l.007-.01a.19.19 0 0 1 .017-.02c.19-.244.208-.57.043-.81a.877.877 0 0 0-.8-.372c-.618.036-1.117.518-1.205 1.228-.063.509.09 1.04.432 1.5.39.516.953.844 1.585.925.627.08 1.27-.1 1.762-.494.57-.455.9-1.128.91-1.86a2.42 2.42 0 0 0-.607-1.644c-.52-.553-1.264-.845-2.088-.82-.98.028-1.882.484-2.487 1.244-.567.71-.83 1.643-.73 2.574.1.912.551 1.724 1.27 2.286.73.57 1.653.844 2.666.792 1.476-.075 2.792-.79 3.71-2.012.848-1.13 1.3-2.625 1.274-4.204-.035-2.154-.73-3.977-2.013-5.271-1.294-1.304-3.16-2.008-5.21-1.98-2.178.03-3.964.847-5.158 2.365-1.155 1.469-1.712 3.562-1.564 5.866.19 2.972 1.114 5.31 2.748 6.946 1.618 1.622 3.88 2.483 6.55 2.494h.004c1.72 0 3.22-.398 4.456-1.182a7.97 7.97 0 0 0 2.803-3.13c.405-.82.635-1.687.684-2.578.17-3.016-.627-5.6-2.27-7.488-1.646-1.889-4.113-2.963-6.93-3.004-2.655-.038-5.006.873-6.62 2.56-1.577 1.648-2.393 3.972-2.393 6.72 0 3.167.783 5.703 2.327 7.536C6.5 22.953 8.857 24 11.897 24.025l.15.001c.008 0 .017 0 .025-.001l.114-.025z"/></svg>
+                <div>
+                  <p class="text-sm font-semibold text-parchment-100">Threads</p>
+                  <p class="text-xs text-parchment-500">@sidixlab</p>
+                </div>
+              </a>
+              <a href="https://github.com/fahmiwol/sidix/discussions" target="_blank" rel="noopener" class="social-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-parchment-300 flex-shrink-0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <div>
+                  <p class="text-sm font-semibold text-parchment-100">GitHub Discussions</p>
+                  <p class="text-xs text-parchment-500">Q&amp;A · Ideas · Community</p>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Newsletter -->
+          <div>
+            <p class="section-label mb-3">Newsletter</p>
+            <h2 class="font-display text-3xl font-bold text-parchment-100 mb-2" style="font-family:Georgia,serif">Stay Updated</h2>
+            <p class="text-parchment-500 text-sm mb-8">Release notes, new features, and research updates. No spam. Unsubscribe anytime.</p>
+
+            <form action="https://app.convertkit.com/forms/REPLACE_ID/subscriptions" method="post" class="space-y-3">
+              <input type="email" name="email_address" placeholder="your@email.com" required
+                class="w-full bg-warm-800 border border-warm-600 text-parchment-200 rounded-xl px-4 py-3 text-sm
+                       focus:outline-none focus:ring-1 focus:ring-gold-500/40 placeholder:text-parchment-500" />
+              <button type="submit" class="btn-gold text-sm px-6 py-3 w-full justify-center">
+                Subscribe to Updates
+              </button>
+            </form>
+
+            <p class="text-xs text-parchment-500 mt-4">
+              Or subscribe via
+              <a href="/rss.xml" class="text-gold-400 hover:text-gold-300">RSS feed</a>
+              for changelog updates.
+            </p>
+
+            <!-- Donate -->
+            <div class="mt-8 pt-8" style="border-top:1px solid rgba(212,168,83,0.08)">
+              <p class="section-label mb-3">Support</p>
+              <h3 class="font-bold text-parchment-100 mb-2">Help Keep SIDIX Free</h3>
+              <p class="text-sm text-parchment-500 mb-5">SIDIX is MIT-licensed and solo-built. If it's useful to you, a sponsorship helps cover server costs and development time.</p>
+              <div class="flex gap-3 flex-wrap">
+                <a href="https://github.com/sponsors/fahmiwol" target="_blank" rel="noopener" class="btn-outline text-sm">
+                  ❤️ GitHub Sponsors
+                </a>
+                <a href="https://saweria.co/sidixlab" target="_blank" rel="noopener" class="btn-outline text-sm">
+                  ☕ Saweria
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ FOOTER ═══════════════════ -->
+    <footer class="py-12 px-6">
+      <div class="divider mb-10"></div>
+      <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#D4A853,#B8924A)">
+            <span style="font-family:Georgia,serif;font-weight:700;color:#120F09;font-size:1rem;line-height:1">S</span>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-parchment-200" style="font-family:Georgia,serif">SIDIX</p>
+            <p class="text-[10px] text-parchment-500">MIT License · Self-Hosted</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-parchment-500">
+          <a href="https://github.com/fahmiwol/sidix" target="_blank" rel="noopener" class="hover:text-gold-400 transition-colors">GitHub</a>
+          <a href="https://github.com/fahmiwol/sidix/blob/main/docs/EPISTEMIC_FRAMEWORK.md" target="_blank" rel="noopener" class="hover:text-gold-400 transition-colors">Framework</a>
+          <a href="https://github.com/fahmiwol/sidix/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener" class="hover:text-gold-400 transition-colors">Contribute</a>
+          <a href="https://github.com/fahmiwol/sidix/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-gold-400 transition-colors">License</a>
+          <a href="https://www.instagram.com/sidixlab" target="_blank" rel="noopener" class="hover:text-gold-400 transition-colors">Instagram</a>
+          <a href="https://www.threads.com/@sidixlab" target="_blank" rel="noopener" class="hover:text-gold-400 transition-colors">Threads</a>
+        </div>
+
+        <p class="text-[10px] text-parchment-500 text-center md:text-right">
+          Built with: sidq · sanad · tabayyun · ikhlas
+        </p>
+      </div>
+    </footer>
+
+  </div><!-- /z-10 -->
+</body>
+</html>

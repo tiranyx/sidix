@@ -11,8 +11,8 @@ import {
   MessageSquare, Library, Settings, ArrowUp, Plus, FileText,
   UploadCloud, AlertTriangle, Cpu, Info,
   ChevronDown, Sparkles, Paperclip, Copy, Check, Trash2,
-  FolderTree, ShieldCheck, Folder, Lock, MoreHorizontal,
-  LoaderCircle, Zap, BookOpen, ShieldAlert,
+  FolderTree, ShieldCheck, Folder, Lock, LockOpen, MoreHorizontal,
+  LoaderCircle, Zap, BookOpen, ShieldAlert, Key,
 } from 'lucide';
 
 import {
@@ -30,12 +30,93 @@ function initIcons() {
       MessageSquare, Library, Settings, ArrowUp, Plus, FileText,
       UploadCloud, AlertTriangle, Cpu, Info,
       ChevronDown, Sparkles, Paperclip, Copy, Check, Trash2,
-      FolderTree, ShieldCheck, Folder, Lock, MoreHorizontal,
-      LoaderCircle, Zap, BookOpen, ShieldAlert,
+      FolderTree, ShieldCheck, Folder, Lock, LockOpen, MoreHorizontal,
+      LoaderCircle, Zap, BookOpen, ShieldAlert, Key,
     },
   });
 }
 initIcons();
+
+// ── Admin mode ───────────────────────────────────────────────────────────────
+const ADMIN_PIN = 'sidix';
+const ADMIN_KEY = 'sidix_admin';
+
+function isAdmin(): boolean {
+  return sessionStorage.getItem(ADMIN_KEY) === '1';
+}
+
+function setAdminMode(active: boolean) {
+  if (active) {
+    sessionStorage.setItem(ADMIN_KEY, '1');
+  } else {
+    sessionStorage.removeItem(ADMIN_KEY);
+  }
+  applyAdminUI();
+}
+
+function applyAdminUI() {
+  const admin = isAdmin();
+  const corpusBtn = document.getElementById('nav-corpus');
+  const lockBtn   = document.getElementById('nav-admin-lock');
+
+  if (corpusBtn) corpusBtn.classList.toggle('hidden', !admin);
+
+  if (lockBtn) {
+    lockBtn.title = admin ? 'Keluar dari mode admin' : 'Mode admin';
+    lockBtn.innerHTML = admin
+      ? '<i data-lucide="lock-open" class="w-4 h-4 text-gold-400"></i>'
+      : '<i data-lucide="lock" class="w-4 h-4"></i>';
+    initIcons();
+  }
+
+  // If leaving admin mode while on corpus/admin-settings, go back to chat
+  if (!admin) {
+    const corpusVisible = !document.getElementById('screen-corpus')?.classList.contains('hidden');
+    if (corpusVisible) switchScreen('chat');
+  }
+}
+
+// Admin PIN modal wiring
+const pinModal   = document.getElementById('admin-pin-modal');
+const pinInput   = document.getElementById('admin-pin-input') as HTMLInputElement;
+const pinError   = document.getElementById('admin-pin-error');
+const pinConfirm = document.getElementById('admin-pin-confirm');
+const pinCancel  = document.getElementById('admin-pin-cancel');
+
+function openPinModal() {
+  if (pinModal) pinModal.classList.remove('hidden');
+  if (pinInput) { pinInput.value = ''; pinInput.focus(); }
+  if (pinError) pinError.classList.add('hidden');
+}
+
+function closePinModal() {
+  if (pinModal) pinModal.classList.add('hidden');
+}
+
+function confirmPin() {
+  if (pinInput?.value === ADMIN_PIN) {
+    setAdminMode(true);
+    closePinModal();
+  } else {
+    if (pinError) pinError.classList.remove('hidden');
+    if (pinInput) { pinInput.value = ''; pinInput.focus(); }
+  }
+}
+
+pinConfirm?.addEventListener('click', confirmPin);
+pinCancel?.addEventListener('click', closePinModal);
+pinInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmPin(); });
+
+document.getElementById('nav-admin-lock')?.addEventListener('click', () => {
+  if (isAdmin()) {
+    setAdminMode(false);
+  } else {
+    openPinModal();
+  }
+});
+
+// Apply on load
+applyAdminUI();
 
 // ── Elements ─────────────────────────────────────────────────────────────────
 const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -153,8 +234,11 @@ function switchScreen(screenId: keyof typeof screens) {
     }
   });
 
-  if (screenId === 'corpus') loadCorpus();
-  if (screenId === 'settings') switchSettingsTab('model');
+  if (screenId === 'corpus') {
+    if (!isAdmin()) { switchScreen('chat'); return; }
+    loadCorpus();
+  }
+  if (screenId === 'settings') switchSettingsTab(isAdmin() ? 'model' : 'about');
 }
 
 navBtns.chat?.addEventListener('click',     () => switchScreen('chat'));
@@ -370,9 +454,9 @@ async function handleSend() {
     onError: (msg) => {
       streamWrap.remove();
       if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
-        appendError('Backend brain_qa tidak terhubung. Jalankan: python -m brain_qa serve');
+        appendError('SIDIX sedang offline. Hubungi administrator atau coba lagi nanti.');
       } else {
-        appendError(`Error: ${msg}`);
+        appendError('Terjadi kesalahan. Silakan coba lagi.');
       }
     },
   }, collectAskOpts());
@@ -472,7 +556,7 @@ async function loadCorpus() {
       <div class="col-span-full flex items-center justify-center gap-2 py-10 text-status-failed text-sm">
         <i data-lucide="shield-alert" class="w-4 h-4"></i>
         ${e instanceof BrainQAError && (e.code === 'network' || e.code === 'timeout')
-          ? 'Backend tidak terhubung. Jalankan: <code class="font-mono ml-1">python -m brain_qa serve</code>'
+          ? 'Backend offline. Pastikan brain_qa serve sudah berjalan.'
           : 'Gagal memuat corpus.'}
       </div>`;
     initIcons();
@@ -539,6 +623,38 @@ addDocBtn?.addEventListener('click', () => {
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 const BRAIN_QA_CORPUS_PATH = `${BRAIN_QA_BASE.replace('http://localhost:', 'local:')}/../brain/public`;
+
+// ── Settings tabs — public & admin ──────────────────────────────────────────
+
+/** Returns the tab list for current mode (public sees about+preferensi; admin sees everything). */
+function getSettingsNavItems(): Array<{ id: string; icon: string; label: string }> {
+  const base = [
+    { id: 'about',      icon: 'info',         label: 'Tentang' },
+    { id: 'preferensi', icon: 'sparkles',      label: 'Preferensi' },
+  ];
+  if (!isAdmin()) return base;
+  return [
+    { id: 'model',      icon: 'cpu',          label: 'Model' },
+    { id: 'corpus-cfg', icon: 'folder-tree',  label: 'Corpus' },
+    { id: 'privacy',    icon: 'shield-check', label: 'Privasi' },
+    ...base,
+  ];
+}
+
+function renderSettingsNav(activeTab: string) {
+  const nav = document.querySelector<HTMLElement>('.settings-nav');
+  if (!nav) return;
+  nav.innerHTML = getSettingsNavItems().map(item => `
+    <button data-settings-tab="${item.id}"
+      class="settings-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+             transition-all ${item.id === activeTab ? 'nav-item-active' : 'text-parchment-400 hover:bg-warm-700 hover:text-parchment-100'}">
+      <i data-lucide="${item.icon}" class="w-4 h-4 flex-shrink-0"></i> ${item.label}
+    </button>`).join('');
+  initIcons();
+  nav.querySelectorAll<HTMLButtonElement>('.settings-nav-item').forEach(btn => {
+    btn.addEventListener('click', () => { const t = btn.dataset.settingsTab; if (t) switchSettingsTab(t); });
+  });
+}
 
 const settingsTabs: Record<string, string> = {
   model: `
@@ -711,32 +827,82 @@ const settingsTabs: Record<string, string> = {
           <span class="font-display font-bold text-warm-950 text-4xl leading-none">S</span>
         </div>
         <div>
-          <h3 class="font-display text-3xl font-bold glow-gold">SIDIX Workspace</h3>
-          <p class="text-gold-400 font-medium tracking-widest text-xs uppercase mt-2 font-sans">Mighan-brain-1 · v0.1.0</p>
+          <h3 class="font-display text-3xl font-bold glow-gold">SIDIX</h3>
+          <p class="text-gold-400 font-medium tracking-widest text-xs uppercase mt-2 font-sans">Self-Hosted AI Agent · v1.0</p>
         </div>
         <p class="text-parchment-400 text-sm max-w-sm leading-relaxed">
-          SIDIX adalah antarmuka untuk <strong class="text-parchment-200">Mighan-brain-1</strong> —
-          brain pack berbasis RAG dengan memori terstruktur, sitasi sumber, dan persona router.
+          SIDIX adalah AI agent yang jujur, bersumber, dan bisa diverifikasi.
+          Setiap jawaban berlabel <code class="font-mono text-gold-400 text-[11px]">[FACT]</code>
+          / <code class="font-mono text-gold-400 text-[11px]">[OPINION]</code>
+          / <code class="font-mono text-gold-400 text-[11px]">[UNKNOWN]</code>.
           Self-hosted, MIT license.
         </p>
+        <div class="flex items-center gap-3 text-xs">
+          <span class="px-2.5 py-1 rounded-full bg-warm-700 border border-warm-600 text-parchment-400">Calibrate</span>
+          <span class="text-parchment-600">·</span>
+          <span class="px-2.5 py-1 rounded-full bg-warm-700 border border-warm-600 text-parchment-400">Trace</span>
+          <span class="text-parchment-600">·</span>
+          <span class="px-2.5 py-1 rounded-full bg-warm-700 border border-warm-600 text-parchment-400">Scrutinize</span>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
         <div class="academic-card text-center">
           <p class="text-[10px] text-parchment-500 uppercase font-bold mb-1">Lisensi</p>
-          <p class="text-sm font-medium text-parchment-100">MIT</p>
+          <p class="text-sm font-medium text-parchment-100">MIT Open Source</p>
         </div>
         <div class="academic-card text-center">
-          <p class="text-[10px] text-parchment-500 uppercase font-bold mb-1">Backend</p>
-          <p class="text-sm font-medium text-parchment-100">brain_qa (Python)</p>
+          <p class="text-[10px] text-parchment-500 uppercase font-bold mb-1">Versi</p>
+          <p class="text-sm font-medium text-parchment-100">v1.0 · Mighan-brain-1</p>
         </div>
-        <div class="academic-card text-center">
-          <p class="text-[10px] text-parchment-500 uppercase font-bold mb-1">Identitas Publik</p>
-          <p class="text-sm font-medium text-parchment-100">Mighan (anonim)</p>
+        <div class="academic-card text-center col-span-2">
+          <p class="text-[10px] text-parchment-500 uppercase font-bold mb-1">Source Code</p>
+          <a href="https://github.com/fahmiwol/sidix" target="_blank" rel="noopener"
+            class="text-sm font-medium text-gold-400 hover:text-gold-300 transition-colors">
+            github.com/fahmiwol/sidix →
+          </a>
         </div>
-        <div class="academic-card text-center">
-          <p class="text-[10px] text-parchment-500 uppercase font-bold mb-1">Repo</p>
-          <p class="text-sm font-medium text-parchment-100">D:\\MIGHAN Model</p>
+      </div>
+    </div>`,
+
+  preferensi: `
+    <div class="space-y-8 animate-fsu">
+      <div>
+        <h3 class="font-display text-2xl font-bold glow-gold">Preferensi</h3>
+        <p class="text-parchment-400 text-sm mt-1">Sesuaikan pengalaman SIDIX kamu.</p>
+      </div>
+
+      <div class="space-y-3">
+        <div class="academic-card space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-parchment-100">Korpus saja</p>
+              <p class="text-xs text-parchment-400 mt-0.5">Jawab hanya dari dokumen lokal, tanpa fallback web.</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="pref-corpus-only-global" class="sr-only peer" />
+              <div class="w-9 h-5 bg-warm-700 rounded-full peer-checked:bg-gold-500 transition-colors border border-warm-600 peer-checked:border-gold-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-parchment-400 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4 peer-checked:after:bg-warm-900"></div>
+            </label>
+          </div>
+          <hr class="border-warm-600/30" />
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-parchment-100">Mode ringkas</p>
+              <p class="text-xs text-parchment-400 mt-0.5">Jawaban lebih pendek dan langsung ke poin.</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="pref-simple-global" class="sr-only peer" />
+              <div class="w-9 h-5 bg-warm-700 rounded-full peer-checked:bg-gold-500 transition-colors border border-warm-600 peer-checked:border-gold-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-parchment-400 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4 peer-checked:after:bg-warm-900"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-card flex gap-3 items-start border-gold-500/10 bg-warm-800/30">
+        <i data-lucide="shield-check" class="w-5 h-5 text-status-ready flex-shrink-0 mt-0.5"></i>
+        <div>
+          <p class="font-semibold text-parchment-200 text-sm">Data kamu aman</p>
+          <p class="text-xs text-parchment-400 mt-1">SIDIX berjalan sepenuhnya lokal. Tidak ada data yang dikirim ke cloud tanpa persetujuan eksplisit kamu.</p>
         </div>
       </div>
     </div>`,
@@ -744,24 +910,17 @@ const settingsTabs: Record<string, string> = {
 
 function switchSettingsTab(tabId: string) {
   if (!settingsContent) return;
-  settingsContent.innerHTML = settingsTabs[tabId] ?? '';
+
+  // Fall back to 'about' if tab not available for current mode
+  const available = getSettingsNavItems().map(i => i.id);
+  const resolvedTab = available.includes(tabId) ? tabId : (isAdmin() ? 'model' : 'about');
+
+  settingsContent.innerHTML = settingsTabs[resolvedTab] ?? '';
   initIcons();
 
-  // Active nav highlight
-  document.querySelectorAll<HTMLButtonElement>('.settings-nav-item').forEach(btn => {
-    if (btn.dataset.settingsTab === tabId) {
-      btn.classList.add('nav-item-active');
-      btn.classList.remove('text-parchment-400');
-    } else {
-      btn.classList.remove('nav-item-active');
-      btn.classList.add('text-parchment-400');
-    }
-  });
+  renderSettingsNav(resolvedTab);
 
-  // Live backend status + inference labels + tes generate (tab Model)
-  if (tabId === 'model') {
-    void refreshModelTabPanel();
-  }
+  if (resolvedTab === 'model') void refreshModelTabPanel();
 }
 
 /** Isi badge + label mode/LoRA; refresh health jika perlu */
@@ -823,12 +982,7 @@ async function refreshModelTabPanel() {
   }
 }
 
-document.querySelectorAll<HTMLButtonElement>('.settings-nav-item').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tab = btn.dataset.settingsTab;
-    if (tab) switchSettingsTab(tab);
-  });
-});
+// Settings nav items are rendered dynamically by renderSettingsNav() inside switchSettingsTab().
 
 // Reset workspace (confirmation guard)
 $('reset-workspace-btn')?.addEventListener('click', () => {

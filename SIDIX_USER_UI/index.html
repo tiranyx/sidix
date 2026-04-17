@@ -34,19 +34,30 @@
         >
           <i data-lucide="message-square" class="w-5 h-5"></i>
         </button>
+        <!-- Admin-only: hidden until admin mode unlocked -->
         <button
           id="nav-corpus"
-          class="nav-item w-10 h-10 rounded-xl flex items-center justify-center text-parchment-400
+          class="nav-item hidden w-10 h-10 rounded-xl flex items-center justify-center text-parchment-400
                  hover:bg-warm-700 hover:text-parchment-100 transition-all duration-150"
-          title="Knowledge Base"
+          title="Knowledge Base (Admin)"
           aria-label="Knowledge Base"
         >
           <i data-lucide="library" class="w-5 h-5"></i>
         </button>
       </nav>
 
-      <!-- Settings at bottom -->
-      <div class="mt-auto">
+      <!-- Settings + Admin lock at bottom -->
+      <div class="mt-auto flex flex-col gap-3">
+        <!-- Admin toggle key -->
+        <button
+          id="nav-admin-lock"
+          class="nav-item w-10 h-10 rounded-xl flex items-center justify-center text-parchment-500
+                 hover:bg-warm-700 hover:text-parchment-100 transition-all duration-150"
+          title="Mode admin"
+          aria-label="Admin"
+        >
+          <i data-lucide="lock" class="w-4 h-4"></i>
+        </button>
         <button
           id="nav-settings"
           class="nav-item w-10 h-10 rounded-xl flex items-center justify-center text-parchment-400
@@ -318,28 +329,8 @@
             <p class="text-[10px] text-parchment-500 uppercase tracking-widest font-semibold mt-0.5">Workspace</p>
           </div>
 
-          <nav class="flex flex-col gap-1">
-            <button data-settings-tab="model"
-              class="settings-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                     transition-all text-parchment-400 hover:bg-warm-700 hover:text-parchment-100">
-              <i data-lucide="cpu" class="w-4 h-4 flex-shrink-0"></i> Model
-            </button>
-            <button data-settings-tab="corpus-cfg"
-              class="settings-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                     transition-all text-parchment-400 hover:bg-warm-700 hover:text-parchment-100">
-              <i data-lucide="folder-tree" class="w-4 h-4 flex-shrink-0"></i> Corpus Path
-            </button>
-            <button data-settings-tab="privacy"
-              class="settings-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                     transition-all text-parchment-400 hover:bg-warm-700 hover:text-parchment-100">
-              <i data-lucide="shield-check" class="w-4 h-4 flex-shrink-0"></i> Privasi
-            </button>
-            <button data-settings-tab="about"
-              class="settings-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                     transition-all text-parchment-400 hover:bg-warm-700 hover:text-parchment-100">
-              <i data-lucide="info" class="w-4 h-4 flex-shrink-0"></i> Tentang
-            </button>
-          </nav>
+          <!-- Rendered dynamically by main.ts based on admin mode -->
+          <nav class="settings-nav flex flex-col gap-1"></nav>
 
           <div class="mt-auto pt-4 border-t border-warm-600/30">
             <button
@@ -361,6 +352,35 @@
       </section>
 
     </main>
+
+    <!-- ════════ ADMIN PIN MODAL ════════ -->
+    <div id="admin-pin-modal" class="hidden fixed inset-0 z-[999] flex items-center justify-center bg-warm-950/80 backdrop-blur-sm">
+      <div class="glass rounded-2xl p-8 w-full max-w-xs shadow-2xl border border-gold-500/20 text-center space-y-5">
+        <div class="w-12 h-12 rounded-2xl bg-warm-700 border border-warm-600 flex items-center justify-center mx-auto">
+          <i data-lucide="lock" class="w-5 h-5 text-gold-400"></i>
+        </div>
+        <div>
+          <h3 class="font-display font-bold text-parchment-100 text-lg">Mode Admin</h3>
+          <p class="text-xs text-parchment-500 mt-1">Masukkan PIN untuk melanjutkan</p>
+        </div>
+        <input
+          id="admin-pin-input"
+          type="password"
+          placeholder="PIN"
+          maxlength="12"
+          class="w-full bg-warm-800 border border-warm-600 text-parchment-100 rounded-xl px-4 py-3
+                 text-sm text-center tracking-[0.3em] font-mono focus:outline-none focus:ring-1
+                 focus:ring-gold-500/50 placeholder:tracking-normal placeholder:text-parchment-500"
+        />
+        <p id="admin-pin-error" class="hidden text-xs text-status-failed">PIN salah. Coba lagi.</p>
+        <div class="flex gap-3">
+          <button id="admin-pin-cancel" class="flex-1 px-4 py-2.5 rounded-xl text-sm text-parchment-400
+                  hover:bg-warm-700 transition-all border border-warm-600">Batal</button>
+          <button id="admin-pin-confirm" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold
+                  btn-gold">Masuk</button>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>
