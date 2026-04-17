@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sidix": {
+      "command": "node",
+      "args": ["D:\\MIGHAN Model\\apps\\sidix-mcp\\src\\index.js"],
+      "env": {
+        "SIDIX_URL": "http://localhost:8765",
+        "SIDIX_CORPUS": "D:\\MIGHAN Model\\brain\\public"
+      }
+    }
+  }
+}
