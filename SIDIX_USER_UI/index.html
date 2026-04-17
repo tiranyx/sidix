@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SIDIX — Mighan Workspace</title>
+    <title>SIDIX — Self-Hosted AI Agent</title>
     <link rel="stylesheet" href="/src/index.css" />
   </head>
 
@@ -141,40 +141,52 @@
               </div>
             </div>
             <div class="space-y-2">
-              <p class="font-display text-3xl font-bold glow-gold tracking-wide">Mighan Workspace</p>
+              <p class="font-display text-3xl font-bold glow-gold tracking-wide">SIDIX</p>
               <p class="text-sm text-parchment-400 max-w-xs mx-auto leading-relaxed">
-                Tanya apa saja — jawaban disertai kutipan sumber dari korpus kamu.
+                Diskusi dan tanya apa saja — jujur, bersumber, bisa diverifikasi.
               </p>
             </div>
             <!-- Quick prompts -->
             <div class="grid grid-cols-2 gap-3 w-full max-w-md">
               <button
                 class="quick-prompt academic-card text-xs text-left hover:cursor-pointer"
-                data-prompt="Apa prinsip-prinsip inti metodologi riset di korpus ini?"
+                data-prompt="Aku butuh partner buat brainstorm ide. Bantu aku eksplorasi ide dan buat rencana yang solid."
               >
-                <p class="font-semibold text-gold-400 mb-1">Prinsip Riset</p>
-                <p class="text-parchment-400 leading-snug">Apa metodologi dalam korpus?</p>
+                <div class="flex items-center gap-2 mb-1.5">
+                  <i data-lucide="users" class="w-4 h-4 text-gold-400 flex-shrink-0"></i>
+                  <p class="font-semibold text-gold-400">Partner</p>
+                </div>
+                <p class="text-parchment-400 leading-snug">Brainstorm, buat rencana, dan riset</p>
               </button>
               <button
                 class="quick-prompt academic-card text-xs text-left hover:cursor-pointer"
-                data-prompt="Buatkan ringkasan dokumen yang paling baru diindeks."
+                data-prompt="Bantu aku buat aplikasi. Jelaskan langkah-langkah membangun project dari awal."
               >
-                <p class="font-semibold text-gold-400 mb-1">Ringkasan Terbaru</p>
-                <p class="text-parchment-400 leading-snug">Resume dokumen terakhir diindeks.</p>
+                <div class="flex items-center gap-2 mb-1.5">
+                  <i data-lucide="code-2" class="w-4 h-4 text-gold-400 flex-shrink-0"></i>
+                  <p class="font-semibold text-gold-400">Coding Agent</p>
+                </div>
+                <p class="text-parchment-400 leading-snug">Bangun aplikasi, game, website & lebih</p>
               </button>
               <button
                 class="quick-prompt academic-card text-xs text-left hover:cursor-pointer"
-                data-prompt="Jelaskan konsep maqasid al-shari'ah dalam konteks kerangka epistemologi."
+                data-prompt="Bantu aku dengan kebutuhan kreatif — desain UI/UX, prompt gambar, atau konten generatif."
               >
-                <p class="font-semibold text-gold-400 mb-1">Kerangka Epistemologi</p>
-                <p class="text-parchment-400 leading-snug">Jelaskan maqasid & IHOS.</p>
+                <div class="flex items-center gap-2 mb-1.5">
+                  <i data-lucide="palette" class="w-4 h-4 text-gold-400 flex-shrink-0"></i>
+                  <p class="font-semibold text-gold-400">Creative</p>
+                </div>
+                <p class="text-parchment-400 leading-snug">Gambar, UI/UX, Video, TTS & Generative</p>
               </button>
               <button
                 class="quick-prompt academic-card text-xs text-left hover:cursor-pointer"
-                data-prompt="Apa status proyek-proyek aktif yang sedang dikerjakan?"
+                data-prompt="Hai SIDIX! Nggak ada agenda khusus, cuma mau ngobrol santai. Ceritain sesuatu yang menarik dong."
               >
-                <p class="font-semibold text-gold-400 mb-1">Status Proyek</p>
-                <p class="text-parchment-400 leading-snug">Proyek aktif & prioritasnya.</p>
+                <div class="flex items-center gap-2 mb-1.5">
+                  <i data-lucide="coffee" class="w-4 h-4 text-gold-400 flex-shrink-0"></i>
+                  <p class="font-semibold text-gold-400">Chit Chat & Chill</p>
+                </div>
+                <p class="text-parchment-400 leading-snug">Ngobrol santai, diskusi bebas</p>
               </button>
             </div>
           </div>
