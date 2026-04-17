@@ -26,9 +26,19 @@ from __future__ import annotations
 
 import os
 import logging
+from pathlib import Path
 from typing import Optional
 
 import requests
+
+# Load .env dari direktori brain_qa (satu level di atas package ini)
+try:
+    from dotenv import load_dotenv
+    _env_path = Path(__file__).parent.parent / ".env"
+    if _env_path.exists():
+        load_dotenv(_env_path, override=False)  # override=False: env yang sudah ada tidak ditimpa
+except ImportError:
+    pass  # python-dotenv tidak wajib
 
 log = logging.getLogger("sidix.ollama")
 

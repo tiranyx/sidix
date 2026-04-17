@@ -176,9 +176,9 @@ def sidix_query(question: str) -> str:
             json={
                 "question": question,          # field name sesuai ChatRequest schema
                 "allow_web_fallback": True,
-                "simple_mode": True,           # lebih cepat di Telegram
+                "simple_mode": False,          # false = jawaban lebih natural, tanpa template kaku
             },
-            timeout=90,                        # Ollama butuh waktu lebih
+            timeout=120,                       # 7b butuh waktu lebih
         )
         data = r.json()
         return (
