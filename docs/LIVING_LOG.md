@@ -834,3 +834,28 @@ Auto-trigger:
 - IMPL: **`tests/test_orchestration.py`** — uji skor/plan, tool, `_rule_based_plan` step 0/1.
 - TEST: **`python -m pytest tests/test_orchestration.py -q`** dari root `D:\MIGHAN Model` → **6 passed** (lingkungan: Python 3.14, pytest di-install ke user site bila belum ada).
 - NOTE: PowerShell — gunakan **`;`** bukan `&&` untuk rangkai perintah.
+
+### 2026-04-17 — Deploy VPS + Supabase Setup (Sesi Claude)
+
+- IMPL: **Landing page** `SIDIX_LANDING/index.html` — hero, epistemic triad, features, roadmap, contribute, feedback (Formspree), newsletter, donate, community (Instagram/Threads/GitHub), footer.
+- FIX: Link "Try SIDIX" → `href="/app"` (404) diperbaiki ke `href="https://app.sidixlab.com"`.
+- IMPL: **Public/Admin split** di `SIDIX_USER_UI`:
+  - `app.sidixlab.com` — pure public, tidak ada lock button, tidak ada hint admin.
+  - `ctrl.sidixlab.com` — auto-prompt login modal (username + password), lock button visible setelah auth.
+  - Ganti PIN single-field → form login (username + password, kredensial di `main.ts`).
+- DECISION: PIN client-side dipertahankan sementara; jangka panjang → Nginx Basic Auth atau Supabase Auth.
+- FIX: `brain/manifest.json` — hardcoded Windows path `D:\\MIGHAN Model\\brain\\public` → relative `brain/public`; `paths.py` resolve relative terhadap `workspace_root()`.
+- IMPL: **Deploy ke VPS** `72.62.125.6` (Ubuntu 22.04, aaPanel):
+  - DNS: 4 A record (`@`, `www`, `app`, `ctrl`) → 72.62.125.6.
+  - Backend `brain_qa` via `nohup python3 -m brain_qa serve` → port 8765, 520 dokumen terindeks.
+  - Frontend Vite build → `serve dist -p 4000` (nohup), port 4000.
+  - aaPanel Proxy Project: `app.sidixlab.com` + `ctrl.sidixlab.com` → `127.0.0.1:4000`, SSL Let's Encrypt 89 hari.
+- ERROR: Port 3000/3001/3002/3005 sudah terpakai di server → gunakan port 4000.
+- ERROR: `nohup serve dist -p 4000` Exit 127 → `serve` belum install, fix: `npm install -g serve`.
+- ERROR: SSL validation failed NXDOMAIN → DNS `www` belum ada, fix: tambah A record, tunggu propagasi.
+- ERROR: SSL gagal pada `www.sidixlab.com` karena `www` A record belum ada → tambah dulu, baru apply SSL.
+- ERROR: 502 Bad Gateway setelah reboot → proses `serve` dan `brain_qa` mati, restart manual.
+- DECISION: PM2 belum disetup — proses mati saat server reboot. Next: setup PM2 + `pm2 startup`.
+- DOC: `brain/public/research_notes/60_vps_deployment_sidix_aapanel.md` — panduan deploy lengkap (DNS, aaPanel, Python backend, Node.js frontend, port check, Nginx proxy, SSL, update workflow, PM2, troubleshooting).
+- IMPL: **Supabase project `sidix`** dibuat — org: mighan, region: ap-southeast-1 (Singapore), plan: Free. Project URL: `https://fkgnmrnckcnqvjsyunla.supabase.co`. Schema belum dibuat (coming up...).
+- DECISION: Supabase sebagai backend-as-a-service untuk user management, plugin marketplace, newsletter, feedback. Dipilih karena: PostgreSQL standard (mudah migrasi), Auth bawaan, GitHub OAuth, RLS, free tier cukup untuk tahap awal.
