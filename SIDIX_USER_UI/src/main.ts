@@ -23,6 +23,8 @@ import {
   type AskInferenceOpts,
 } from './api';
 
+import { subscribeNewsletter, submitFeedbackDB, type FeedbackType } from './lib/supabase';
+
 // ── Bootstrap icons ──────────────────────────────────────────────────────────
 function initIcons() {
   createIcons({
@@ -650,11 +652,12 @@ const BRAIN_QA_CORPUS_PATH = `${BRAIN_QA_BASE.replace('http://localhost:', 'loca
 
 // ── Settings tabs — public & admin ──────────────────────────────────────────
 
-/** Returns the tab list for current mode (public sees about+preferensi; admin sees everything). */
+/** Returns the tab list for current mode (public sees about+preferensi+saran; admin sees everything). */
 function getSettingsNavItems(): Array<{ id: string; icon: string; label: string }> {
   const base = [
     { id: 'about',      icon: 'info',         label: 'Tentang' },
     { id: 'preferensi', icon: 'sparkles',      label: 'Preferensi' },
+    { id: 'saran',      icon: 'zap',           label: 'Saran' },
   ];
   if (!isAdmin()) return base;
   return [
@@ -931,6 +934,58 @@ const settingsTabs: Record<string, string> = {
         </div>
       </div>
     </div>`,
+
+  saran: `
+    <div class="space-y-6 animate-fsu">
+      <div>
+        <h3 class="font-display text-2xl font-bold glow-gold">Kirim Saran</h3>
+        <p class="text-parchment-400 text-sm mt-1">Bantu SIDIX berkembang. Laporan bug, ide fitur, atau saran apa saja.</p>
+      </div>
+
+      <div class="academic-card space-y-4">
+        <div class="space-y-2">
+          <label class="text-xs font-semibold text-parchment-400 uppercase tracking-wider">Tipe</label>
+          <div class="flex gap-2">
+            <button data-feedback-type="bug"   class="feedback-type-btn flex-1 py-2 rounded-xl text-xs font-semibold border border-warm-600
+                   text-parchment-400 hover:border-gold-500/50 hover:text-parchment-100 transition-all">🐛 Bug</button>
+            <button data-feedback-type="saran" class="feedback-type-btn flex-1 py-2 rounded-xl text-xs font-semibold border border-warm-600
+                   text-parchment-400 hover:border-gold-500/50 hover:text-parchment-100 transition-all">💡 Saran</button>
+            <button data-feedback-type="fitur" class="feedback-type-btn flex-1 py-2 rounded-xl text-xs font-semibold border border-warm-600
+                   text-parchment-400 hover:border-gold-500/50 hover:text-parchment-100 transition-all">✨ Fitur</button>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-semibold text-parchment-400 uppercase tracking-wider">Pesan</label>
+          <textarea id="feedback-message" rows="4" placeholder="Ceritakan apa yang kamu rasakan atau inginkan..."
+            class="w-full bg-warm-800 border border-warm-600 text-parchment-100 rounded-xl px-4 py-3 text-sm
+                   resize-none focus:outline-none focus:ring-1 focus:ring-gold-500/50
+                   placeholder:text-parchment-600"></textarea>
+        </div>
+
+        <p id="feedback-status" class="hidden text-xs text-center"></p>
+
+        <button id="feedback-submit-btn"
+          class="w-full py-2.5 rounded-xl text-sm font-semibold btn-gold disabled:opacity-40 disabled:cursor-not-allowed">
+          Kirim Saran
+        </button>
+      </div>
+
+      <div class="academic-card space-y-3">
+        <p class="text-xs font-semibold text-parchment-400 uppercase tracking-wider">Newsletter</p>
+        <p class="text-xs text-parchment-400">Dapatkan update tentang SIDIX langsung ke inbox kamu.</p>
+        <div class="flex gap-2">
+          <input id="newsletter-email" type="email" placeholder="email@kamu.com"
+            class="flex-1 bg-warm-800 border border-warm-600 text-parchment-100 rounded-xl px-4 py-2.5 text-sm
+                   focus:outline-none focus:ring-1 focus:ring-gold-500/50 placeholder:text-parchment-600" />
+          <button id="newsletter-submit-btn"
+            class="px-4 py-2.5 rounded-xl text-sm font-semibold btn-gold whitespace-nowrap">
+            Subscribe
+          </button>
+        </div>
+        <p id="newsletter-status" class="hidden text-xs text-center"></p>
+      </div>
+    </div>`,
 };
 
 function switchSettingsTab(tabId: string) {
@@ -946,6 +1001,82 @@ function switchSettingsTab(tabId: string) {
   renderSettingsNav(resolvedTab);
 
   if (resolvedTab === 'model') void refreshModelTabPanel();
+  if (resolvedTab === 'saran') initSaranTab();
+}
+
+// ── Tab Saran — feedback & newsletter via Supabase ───────────────────────────
+function initSaranTab() {
+  let selectedType: FeedbackType = 'saran';
+
+  // Tipe selector
+  document.querySelectorAll<HTMLButtonElement>('.feedback-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedType = btn.dataset.feedbackType as FeedbackType;
+      document.querySelectorAll('.feedback-type-btn').forEach(b =>
+        b.classList.remove('border-gold-500', 'text-parchment-100', 'bg-warm-700/50'));
+      btn.classList.add('border-gold-500', 'text-parchment-100', 'bg-warm-700/50');
+    });
+    // Default highlight: saran
+    if (btn.dataset.feedbackType === 'saran') {
+      btn.classList.add('border-gold-500', 'text-parchment-100', 'bg-warm-700/50');
+    }
+  });
+
+  // Submit feedback
+  const submitBtn  = document.getElementById('feedback-submit-btn') as HTMLButtonElement;
+  const msgEl      = document.getElementById('feedback-message') as HTMLTextAreaElement;
+  const statusEl   = document.getElementById('feedback-status')!;
+
+  submitBtn?.addEventListener('click', async () => {
+    const message = msgEl?.value.trim();
+    if (!message) { msgEl?.focus(); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Mengirim…';
+    statusEl.classList.add('hidden');
+
+    const { ok, error } = await submitFeedbackDB({ type: selectedType, message });
+
+    if (ok) {
+      statusEl.textContent = '✓ Terima kasih! Saran kamu sudah diterima.';
+      statusEl.className   = 'text-xs text-center text-status-ready';
+      msgEl.value = '';
+    } else {
+      statusEl.textContent = `Gagal mengirim: ${error}`;
+      statusEl.className   = 'text-xs text-center text-status-failed';
+    }
+    statusEl.classList.remove('hidden');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Kirim Saran';
+  });
+
+  // Subscribe newsletter
+  const nlBtn    = document.getElementById('newsletter-submit-btn') as HTMLButtonElement;
+  const nlEmail  = document.getElementById('newsletter-email') as HTMLInputElement;
+  const nlStatus = document.getElementById('newsletter-status')!;
+
+  nlBtn?.addEventListener('click', async () => {
+    const email = nlEmail?.value.trim();
+    if (!email || !email.includes('@')) { nlEmail?.focus(); return; }
+
+    nlBtn.disabled = true;
+    nlBtn.textContent = '…';
+    nlStatus.classList.add('hidden');
+
+    const { ok, error } = await subscribeNewsletter(email);
+
+    if (ok) {
+      nlStatus.textContent = '✓ Berhasil! Kamu akan mendapat update terbaru SIDIX.';
+      nlStatus.className   = 'text-xs text-center text-status-ready';
+      nlEmail.value = '';
+    } else {
+      nlStatus.textContent = `Gagal: ${error}`;
+      nlStatus.className   = 'text-xs text-center text-status-failed';
+    }
+    nlStatus.classList.remove('hidden');
+    nlBtn.disabled = false;
+    nlBtn.textContent = 'Subscribe';
+  });
 }
 
 /** Isi badge + label mode/LoRA; refresh health jika perlu */
