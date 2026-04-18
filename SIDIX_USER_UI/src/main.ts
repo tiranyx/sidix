@@ -13,6 +13,7 @@ import {
   ChevronDown, Sparkles, Paperclip, Copy, Check, Trash2,
   FolderTree, ShieldCheck, Folder, Lock, LockOpen, MoreHorizontal,
   LoaderCircle, Zap, BookOpen, ShieldAlert, Key,
+  Users, Code2, Palette, Coffee, ExternalLink, User,
 } from 'lucide';
 
 import {
@@ -40,10 +41,329 @@ function initIcons() {
       ChevronDown, Sparkles, Paperclip, Copy, Check, Trash2,
       FolderTree, ShieldCheck, Folder, Lock, LockOpen, MoreHorizontal,
       LoaderCircle, Zap, BookOpen, ShieldAlert, Key,
+      Users, Code2, Palette, Coffee, ExternalLink, User,
     },
   });
 }
 initIcons();
+
+// ── Language Detection & i18n ─────────────────────────────────────────────────
+// Detect via browser locale + timezone (no IP call, instant)
+
+type Lang = 'id' | 'en';
+
+function detectLang(): Lang {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? '';
+  const locale = navigator.language ?? '';
+  // Indonesia: WIB/WITA/WIT timezones + bahasa Indonesia
+  const isID = tz.startsWith('Asia/Jakarta') || tz.startsWith('Asia/Makassar') ||
+               tz.startsWith('Asia/Jayapura') || locale.startsWith('id');
+  return isID ? 'id' : 'en';
+}
+
+const LANG: Lang = detectLang();
+
+// i18n strings
+const T = {
+  about: { id: 'Tentang SIDIX', en: 'About SIDIX' },
+  contrib: { id: 'Gabung Kontributor', en: 'Join Contributors' },
+  signIn: { id: 'Sign In', en: 'Sign In' },
+  signUp: { id: 'Daftar', en: 'Sign Up' },
+  signedIn: { id: 'Masuk ✓', en: 'Signed In ✓' },
+  chat: { id: 'Chat', en: 'Chat' },
+  settings: { id: 'Setting', en: 'Settings' },
+  tagline: { id: 'Diskusi dan tanya apa saja — jujur, bersumber, bisa diverifikasi.', en: 'Ask anything — honest, sourced, and verifiable.' },
+  freeBadge: { id: 'AI Agent Gratis · Open Source · Tanpa Langganan', en: 'Free AI Agent · Open Source · No subscription' },
+  placeholder: { id: 'Tanya SIDIX…', en: 'Ask SIDIX…' },
+  contribTitle: { id: 'Gabung Kontributor', en: 'Join as Contributor' },
+  contribSub: { id: 'Developer, researcher, akademisi — semua welcome!', en: 'Developers, researchers, academics — all welcome!' },
+  contribNameLabel: { id: 'Nama Lengkap', en: 'Full Name' },
+  contribRoleLabel: { id: 'Peran Kamu', en: 'Your Role' },
+  contribInterestLabel: { id: 'Mau berkontribusi ke?', en: 'What will you contribute?' },
+  contribNewsletter: {
+    id: 'Saya mau dapat newsletter & update terbaru SIDIX via email',
+    en: 'I want to receive SIDIX newsletter & updates via email',
+  },
+  contribCancel: { id: 'Batal', en: 'Cancel' },
+  contribSubmit: { id: 'Daftar Sekarang', en: 'Join Now' },
+  aboutSubtitle: { id: 'AI Agent Gratis · Open Source · Self-Hosted', en: 'Free AI Agent · Open Source · Self-Hosted' },
+  aboutDesc1: {
+    id: 'SIDIX adalah AI agent gratis yang dibangun di atas prinsip <strong class="text-gold-400">Sidq</strong> (kejujuran), <strong class="text-gold-400">Sanad</strong> (sitasi sumber), dan <strong class="text-gold-400">Tabayyun</strong> (verifikasi).',
+    en: 'SIDIX is a free AI agent built on principles of <strong class="text-gold-400">Sidq</strong> (honesty), <strong class="text-gold-400">Sanad</strong> (source citation), and <strong class="text-gold-400">Tabayyun</strong> (verification).',
+  },
+  aboutDesc2: {
+    id: 'Open source sepenuhnya. Tidak ada biaya langganan. Data kamu aman di server kami.',
+    en: 'Fully open source. No subscription fee. Your data stays safe on our servers.',
+  },
+  aboutCta: { id: 'Kunjungi sidixlab.com', en: 'Visit sidixlab.com' },
+  mobContrib: { id: 'Kontributor', en: 'Contribute' },
+  mobAbout: { id: 'Tentang', en: 'About' },
+} as const;
+
+function t(key: keyof typeof T): string {
+  const entry = T[key] as { id: string; en: string };
+  return entry[LANG] ?? entry['en'];
+}
+
+function applyI18n(): void {
+  // Header
+  const labelAbout = document.getElementById('label-about');
+  const labelContrib = document.getElementById('label-contrib');
+  const labelAuth = document.getElementById('label-auth');
+  if (labelAbout) labelAbout.textContent = t('about');
+  if (labelContrib) labelContrib.textContent = t('contrib');
+  if (labelAuth) labelAuth.textContent = t('signIn');
+
+  // Empty state
+  const tagline = document.getElementById('empty-tagline');
+  const freeBadge = document.getElementById('free-badge');
+  if (tagline) tagline.textContent = t('tagline');
+  if (freeBadge) {
+    freeBadge.innerHTML = `<i data-lucide="zap" class="w-3 h-3 text-gold-600"></i><span>${t('freeBadge')}</span>`;
+  }
+
+  // Placeholder
+  const chatInput = document.getElementById('chat-input') as HTMLTextAreaElement | null;
+  if (chatInput) chatInput.placeholder = t('placeholder');
+
+  // Contributor modal
+  const contribTitle = document.getElementById('contrib-title');
+  const contribSub = document.getElementById('contrib-subtitle');
+  const labelFullname = document.getElementById('label-fullname');
+  const labelRole = document.getElementById('label-role');
+  const labelInterest = document.getElementById('label-interest');
+  const labelNewsletter = document.getElementById('label-newsletter');
+  const labelCancel = document.getElementById('label-cancel');
+  const labelSubmit = document.getElementById('label-submit');
+  if (contribTitle) contribTitle.textContent = t('contribTitle');
+  if (contribSub) contribSub.textContent = t('contribSub');
+  if (labelFullname) labelFullname.textContent = t('contribNameLabel');
+  if (labelRole) labelRole.textContent = t('contribRoleLabel');
+  if (labelInterest) labelInterest.textContent = t('contribInterestLabel');
+  if (labelNewsletter) labelNewsletter.textContent = t('contribNewsletter');
+  if (labelCancel) labelCancel.textContent = t('contribCancel');
+  if (labelSubmit) labelSubmit.textContent = t('contribSubmit');
+
+  // About modal
+  const aboutSub = document.getElementById('about-subtitle');
+  const aboutD1 = document.getElementById('about-desc1');
+  const aboutD2 = document.getElementById('about-desc2');
+  const aboutCta = document.getElementById('about-cta-main');
+  if (aboutSub) aboutSub.textContent = t('aboutSubtitle');
+  if (aboutD1) aboutD1.innerHTML = t('aboutDesc1');
+  if (aboutD2) aboutD2.textContent = t('aboutDesc2');
+  if (aboutCta) aboutCta.textContent = t('aboutCta');
+
+  // Mobile nav
+  const mobChat = document.getElementById('mob-label-chat');
+  const mobSettings = document.getElementById('mob-label-settings');
+  const mobContrib = document.getElementById('mob-label-contrib');
+  const mobAbout = document.getElementById('mob-label-about');
+  const mobAuth = document.getElementById('mob-label-auth');
+  if (mobChat) mobChat.textContent = t('chat');
+  if (mobSettings) mobSettings.textContent = t('settings');
+  if (mobContrib) mobContrib.textContent = t('mobContrib');
+  if (mobAbout) mobAbout.textContent = t('mobAbout');
+  if (mobAuth) mobAuth.textContent = t('signIn');
+
+  initIcons();
+}
+
+// Apply i18n after DOM ready
+applyI18n();
+
+// ── About Modal ──────────────────────────────────────────────────────────────
+
+function openAboutModal() {
+  const m = document.getElementById('about-modal');
+  if (m) m.classList.remove('hidden');
+}
+function closeAboutModal() {
+  const m = document.getElementById('about-modal');
+  if (m) m.classList.add('hidden');
+}
+
+document.getElementById('about-close')?.addEventListener('click', closeAboutModal);
+document.getElementById('about-modal')?.addEventListener('click', (e) => {
+  if (e.target === document.getElementById('about-modal')) closeAboutModal();
+});
+
+// Header + mobile: About SIDIX
+document.getElementById('btn-about-sidix')?.addEventListener('click', openAboutModal);
+document.getElementById('mob-nav-about')?.addEventListener('click', openAboutModal);
+
+
+// ── Contributor Modal ─────────────────────────────────────────────────────────
+
+let selectedContribRole = 'developer';
+
+function openContribModal() {
+  const m = document.getElementById('contrib-modal');
+  if (m) m.classList.remove('hidden');
+}
+function closeContribModal() {
+  const m = document.getElementById('contrib-modal');
+  if (m) m.classList.add('hidden');
+}
+
+document.getElementById('btn-contributor')?.addEventListener('click', openContribModal);
+document.getElementById('mob-nav-contrib')?.addEventListener('click', openContribModal);
+document.getElementById('contrib-cancel')?.addEventListener('click', closeContribModal);
+document.getElementById('contrib-modal')?.addEventListener('click', (e) => {
+  if (e.target === document.getElementById('contrib-modal')) closeContribModal();
+});
+
+// Role buttons
+document.querySelectorAll<HTMLButtonElement>('.role-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedContribRole = btn.dataset.role ?? 'developer';
+    document.querySelectorAll('.role-btn').forEach(b => {
+      b.classList.remove('border-gold-500', 'text-parchment-100', 'bg-warm-700/40');
+    });
+    btn.classList.add('border-gold-500', 'text-parchment-100', 'bg-warm-700/40');
+  });
+  // Default highlight
+  if (btn.dataset.role === 'developer') {
+    btn.classList.add('border-gold-500', 'text-parchment-100', 'bg-warm-700/40');
+  }
+});
+
+// Submit contributor form
+document.getElementById('contrib-submit')?.addEventListener('click', async () => {
+  const nameEl = document.getElementById('contrib-name') as HTMLInputElement;
+  const emailEl = document.getElementById('contrib-email') as HTMLInputElement;
+  const interestEl = document.getElementById('contrib-interest') as HTMLTextAreaElement;
+  const newsletterEl = document.getElementById('contrib-newsletter') as HTMLInputElement;
+  const statusEl = document.getElementById('contrib-status');
+  const submitBtn = document.getElementById('contrib-submit') as HTMLButtonElement;
+
+  const name = nameEl?.value.trim();
+  const email = emailEl?.value.trim();
+  const interest = interestEl?.value.trim();
+  const wantsNewsletter = newsletterEl?.checked ?? true;
+
+  if (!name || !email || !email.includes('@')) {
+    if (!name) nameEl?.focus();
+    else emailEl?.focus();
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = LANG === 'id' ? 'Mendaftar…' : 'Joining…';
+  if (statusEl) statusEl.classList.add('hidden');
+
+  try {
+    // Subscribe newsletter if opted in
+    if (wantsNewsletter) {
+      await subscribeNewsletter(email).catch(() => {});
+    }
+
+    // Save contributor profile
+    const user = await getCurrentUser();
+    if (user) {
+      const { saveDeveloperProfile } = await import('./lib/supabase');
+      await saveDeveloperProfile({
+        user_id: user.id,
+        skills: selectedContribRole,
+        availability: 'TBD',
+        motivation: interest,
+      }).catch(() => {});
+    }
+
+    // Save to Supabase contributors table directly
+    const { supabase } = await import('./lib/supabase');
+    if (supabase) {
+      await supabase.from('contributors').upsert({
+        name,
+        email: email.toLowerCase(),
+        role: selectedContribRole,
+        interest,
+        wants_newsletter: wantsNewsletter,
+        lang: LANG,
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'email' }).catch(() => {});
+    }
+
+    // Success → close modal + redirect to sidixlab.com#contributor
+    if (statusEl) {
+      statusEl.textContent = LANG === 'id' ? '✓ Berhasil! Mengalihkan ke halaman kontributor…' : '✓ Success! Redirecting…';
+      statusEl.className = 'text-xs text-center text-status-ready mt-3';
+      statusEl.classList.remove('hidden');
+    }
+
+    setTimeout(() => {
+      closeContribModal();
+      window.open('https://sidixlab.com#contributor', '_blank', 'noopener');
+    }, 1200);
+
+  } catch (e) {
+    if (statusEl) {
+      statusEl.textContent = `Gagal: ${(e as Error).message}`;
+      statusEl.className = 'text-xs text-center text-status-failed mt-3';
+      statusEl.classList.remove('hidden');
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = t('contribSubmit');
+  }
+});
+
+// ── Auth Button (Header + Mobile) ────────────────────────────────────────────
+
+function updateAuthButton(isSignedIn: boolean, displayName?: string) {
+  const btnAuth = document.getElementById('btn-auth');
+  const labelAuth = document.getElementById('label-auth');
+  const mobAuth = document.getElementById('mob-label-auth');
+
+  if (btnAuth) {
+    btnAuth.classList.toggle('signed-in', isSignedIn);
+  }
+  const txt = isSignedIn ? (displayName ? displayName.split(' ')[0] : t('signedIn')) : t('signIn');
+  if (labelAuth) labelAuth.textContent = txt;
+  if (mobAuth) mobAuth.textContent = isSignedIn ? '✓' : t('signIn');
+}
+
+document.getElementById('btn-auth')?.addEventListener('click', () => {
+  if (isLoggedIn()) {
+    // Already signed in → show options (sign out or profile)
+    openLoginModal(); // reuse modal — will show signed-in state
+  } else {
+    openLoginModal();
+  }
+});
+
+document.getElementById('mob-nav-auth')?.addEventListener('click', () => {
+  openLoginModal();
+});
+
+// ── Mobile bottom nav wiring ──────────────────────────────────────────────────
+
+const mobNavItems = ['mob-nav-chat', 'mob-nav-settings'] as const;
+
+function setMobileActive(activeId: string) {
+  ['mob-nav-chat', 'mob-nav-about', 'mob-nav-contrib', 'mob-nav-settings', 'mob-nav-auth'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    if (id === activeId) {
+      btn.classList.add('text-gold-400');
+      btn.classList.remove('text-parchment-500');
+    } else {
+      btn.classList.remove('text-gold-400');
+      btn.classList.add('text-parchment-500');
+    }
+  });
+}
+
+document.getElementById('mob-nav-chat')?.addEventListener('click', () => {
+  switchScreen('chat');
+  setMobileActive('mob-nav-chat');
+});
+document.getElementById('mob-nav-settings')?.addEventListener('click', () => {
+  switchScreen('settings');
+  setMobileActive('mob-nav-settings');
+});
+
+// Initialize mobile active state
+setMobileActive('mob-nav-chat');
 
 // ── Admin mode ───────────────────────────────────────────────────────────────
 // Kredensial disimpan di sini — untuk keamanan lebih tinggi gunakan Nginx Basic Auth.
@@ -399,6 +719,10 @@ onAuthChange(async (user) => {
   currentAuthUser = user;
 
   if (user) {
+    // Update auth button
+    const name = user.user_metadata?.full_name ?? user.email ?? '';
+    updateAuthButton(true, name);
+
     // User baru login
     closeLoginModal();
 
@@ -415,6 +739,8 @@ onAuthChange(async (user) => {
 
     // Start onboarding jika belum
     await startOnboardingIfNeeded();
+  } else {
+    updateAuthButton(false);
   }
 });
 
@@ -502,17 +828,20 @@ function formatStatusLine(h: HealthResponse): string {
 }
 
 async function pingBackend() {
+  const mobDot = document.getElementById('status-dot-mobile');
   try {
     const h = await checkHealth();
     lastHealth = h;
     backendOnline = true;
     statusDot.style.backgroundColor = '#6EAE7C';            // green
+    if (mobDot) mobDot.style.backgroundColor = '#6EAE7C';
     statusTxt.textContent = formatStatusLine(h);
   } catch {
     lastHealth = null;
     backendOnline = false;
     statusDot.style.backgroundColor = '#C46B6B';            // red
-    statusTxt.textContent = 'Backend tidak terhubung';
+    if (mobDot) mobDot.style.backgroundColor = '#C46B6B';
+    statusTxt.textContent = LANG === 'id' ? 'Backend tidak terhubung' : 'Backend offline';
   }
 }
 
@@ -541,9 +870,9 @@ function switchScreen(screenId: keyof typeof screens) {
   if (screenId === 'settings') switchSettingsTab(isAdmin() ? 'model' : 'about');
 }
 
-navBtns.chat?.addEventListener('click',     () => switchScreen('chat'));
+navBtns.chat?.addEventListener('click',     () => { switchScreen('chat'); setMobileActive('mob-nav-chat'); });
 navBtns.corpus?.addEventListener('click',   () => switchScreen('corpus'));
-navBtns.settings?.addEventListener('click', () => switchScreen('settings'));
+navBtns.settings?.addEventListener('click', () => { switchScreen('settings'); setMobileActive('mob-nav-settings'); });
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 

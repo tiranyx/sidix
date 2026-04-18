@@ -2,71 +2,175 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SIDIX — Self-Hosted AI Agent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0a0805" />
+    <title>SIDIX — Free AI Agent</title>
     <link rel="icon" type="image/svg+xml" href="/sidix-logo.svg" />
+    <link rel="apple-touch-icon" href="/sidix-logo.svg" />
     <link rel="stylesheet" href="/src/index.css" />
+    <style>
+      /* ── Safe area (iPhone notch) ────── */
+      body { padding-top: env(safe-area-inset-top); }
+      .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 8px); }
+
+      /* ── Mobile bottom nav ────────────── */
+      #bottom-nav {
+        display: none;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        z-index: 100;
+        background: rgba(14,10,6,0.97);
+        border-top: 1px solid rgba(204,152,49,0.15);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+      @media (max-width: 767px) {
+        #desktop-sidebar { display: none !important; }
+        #bottom-nav { display: flex !important; }
+        #chat-messages { padding-bottom: 80px; }
+        .chat-footer { padding-bottom: calc(max(env(safe-area-inset-bottom), 8px) + 64px); }
+        /* Fullscreen mobile feel */
+        body { overflow: hidden; }
+        main { height: 100dvh; }
+      }
+      @media (min-width: 768px) {
+        #bottom-nav { display: none !important; }
+        #desktop-sidebar { display: flex !important; }
+      }
+
+      /* ── Native tap highlight off ─────── */
+      * { -webkit-tap-highlight-color: transparent; }
+      button, a { touch-action: manipulation; }
+
+      /* ── Header auth pill ─────────────── */
+      .auth-pill {
+        display: flex; align-items: center; gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(204,152,49,0.35);
+        background: rgba(204,152,49,0.08);
+        font-size: 11px; font-weight: 600;
+        color: #c9985a;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .auth-pill:hover { background: rgba(204,152,49,0.18); border-color: rgba(204,152,49,0.6); }
+      .auth-pill.signed-in { background: rgba(110,174,124,0.12); border-color: rgba(110,174,124,0.4); color: #6EAE7C; }
+
+      .contrib-pill {
+        display: flex; align-items: center; gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(122,107,88,0.4);
+        background: rgba(122,107,88,0.08);
+        font-size: 11px; font-weight: 600;
+        color: #9a8b74;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .contrib-pill:hover { background: rgba(122,107,88,0.18); color: #c9985a; border-color: rgba(204,152,49,0.4); }
+
+      /* ── Smooth scroll chat ───────────── */
+      #chat-messages { scroll-behavior: smooth; }
+
+      /* ── Contributor modal ────────────── */
+      .contrib-modal-backdrop {
+        position: fixed; inset: 0; z-index: 200;
+        background: rgba(10,8,5,0.88);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        display: flex; align-items: flex-end;
+        justify-content: center;
+      }
+      @media (min-width: 768px) {
+        .contrib-modal-backdrop { align-items: center; }
+      }
+      .contrib-modal-card {
+        background: rgba(22,16,10,0.99);
+        border: 1px solid rgba(204,152,49,0.25);
+        border-radius: 24px 24px 0 0;
+        width: 100%; max-width: 480px;
+        padding: 28px 24px max(env(safe-area-inset-bottom), 28px);
+        animation: slideUp 0.28s cubic-bezier(.22,1,.36,1);
+      }
+      @media (min-width: 768px) {
+        .contrib-modal-card { border-radius: 24px; padding: 32px; }
+      }
+      @keyframes slideUp {
+        from { transform: translateY(60px); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+      }
+
+      /* ── About modal (slide up) ────────── */
+      .about-modal-card {
+        background: rgba(22,16,10,0.99);
+        border: 1px solid rgba(204,152,49,0.2);
+        border-radius: 24px 24px 0 0;
+        width: 100%; max-width: 480px;
+        padding: 24px 24px max(env(safe-area-inset-bottom), 24px);
+        max-height: 82vh;
+        overflow-y: auto;
+        animation: slideUp 0.28s cubic-bezier(.22,1,.36,1);
+      }
+      @media (min-width: 768px) {
+        .about-modal-card { border-radius: 24px; max-height: 80vh; padding: 32px; }
+      }
+
+      /* ── Input focus iOS fix ───────────── */
+      textarea:focus { -webkit-user-select: text; }
+    </style>
   </head>
 
-  <body class="h-screen overflow-hidden flex relative">
+  <body class="h-screen overflow-hidden flex relative bg-warm-950">
 
-    <!-- Ambient warm glows (decorative, z-0) -->
-    <div class="ambient-glow w-[480px] h-[480px] bg-amber-900/20 top-[-8%] left-[-8%]"></div>
-    <div class="ambient-glow w-[520px] h-[520px] bg-amber-950/15 bottom-[-15%] right-[-8%]"></div>
+    <!-- Ambient glows -->
+    <div class="ambient-glow w-[480px] h-[480px] bg-amber-900/20 top-[-8%] left-[-8%] pointer-events-none"></div>
+    <div class="ambient-glow w-[520px] h-[520px] bg-amber-950/15 bottom-[-15%] right-[-8%] pointer-events-none"></div>
 
     <!-- ════════════════════════════════════════════════════
-         SIDEBAR — Icon Rail
+         DESKTOP SIDEBAR (hidden on mobile)
     ════════════════════════════════════════════════════ -->
-    <aside class="w-16 flex-shrink-0 glass-sidebar flex flex-col items-center py-6 gap-8 z-50">
+    <aside id="desktop-sidebar" class="w-16 flex-shrink-0 glass-sidebar flex-col items-center py-6 gap-8 z-50 hidden md:flex">
 
-      <!-- Logo mark -->
+      <!-- Logo -->
       <div class="rounded-xl shadow-lg select-none overflow-hidden flex-shrink-0"
            style="width:40px;height:40px;background:rgba(20,15,8,0.95);border:1px solid rgba(204,152,49,0.35)">
         <img src="/sidix-logo.svg" alt="SIDIX" style="width:100%;height:100%;object-fit:contain;padding:5px" draggable="false" />
       </div>
 
       <!-- Primary nav -->
-      <nav class="flex flex-col gap-3" aria-label="Navigasi utama">
-        <button
-          id="nav-chat"
+      <nav class="flex flex-col gap-3">
+        <button id="nav-chat"
           class="nav-item w-10 h-10 rounded-xl flex items-center justify-center text-parchment-400
                  hover:bg-warm-700 hover:text-parchment-100 transition-all duration-150 nav-item-active"
-          title="Chat"
-          aria-label="Chat"
-        >
+          title="Chat">
           <i data-lucide="message-square" class="w-5 h-5"></i>
         </button>
-        <!-- Admin-only: hidden until admin mode unlocked -->
-        <button
-          id="nav-corpus"
+        <!-- Admin only -->
+        <button id="nav-corpus"
           class="nav-item hidden w-10 h-10 rounded-xl flex items-center justify-center text-parchment-400
                  hover:bg-warm-700 hover:text-parchment-100 transition-all duration-150"
-          title="Knowledge Base (Admin)"
-          aria-label="Knowledge Base"
-        >
+          title="Knowledge Base">
           <i data-lucide="library" class="w-5 h-5"></i>
         </button>
       </nav>
 
-      <!-- Settings + Admin lock at bottom -->
+      <!-- Bottom -->
       <div class="mt-auto flex flex-col gap-3">
-        <!-- Admin lock — hanya muncul di ctrl subdomain -->
-        <button
-          id="nav-admin-lock"
+        <button id="nav-admin-lock"
           class="hidden nav-item w-10 h-10 rounded-xl flex items-center justify-center text-parchment-500
                  hover:bg-warm-700 hover:text-parchment-100 transition-all duration-150"
-          title="Mode admin"
-          aria-label="Admin"
-        >
+          title="Admin">
           <i data-lucide="lock" class="w-4 h-4"></i>
         </button>
-        <button
-          id="nav-settings"
+        <button id="nav-settings"
           class="nav-item w-10 h-10 rounded-xl flex items-center justify-center text-parchment-400
                  hover:bg-warm-700 hover:text-parchment-100 transition-all duration-150"
-          title="Pengaturan"
-          aria-label="Pengaturan"
-        >
+          title="Pengaturan">
           <i data-lucide="settings" class="w-5 h-5"></i>
         </button>
       </div>
@@ -77,167 +181,182 @@
     ════════════════════════════════════════════════════ -->
     <main class="flex-1 flex flex-col relative overflow-hidden bg-transparent">
 
-      <!-- ────────────────────────────────────────────────
+      <!-- ──────────────────────────────────────────────────
            SCREEN: Chat
-      ──────────────────────────────────────────────── -->
-      <section id="screen-chat" class="flex-1 flex flex-col">
+      ────────────────────────────────────────────────── -->
+      <section id="screen-chat" class="flex-1 flex flex-col h-full">
 
-        <!-- Header -->
-        <header class="h-14 glass-header flex items-center justify-between px-6 z-10 flex-shrink-0">
-          <div class="flex items-center gap-3">
-            <!-- Status dot -->
-            <div class="flex items-center gap-2">
+        <!-- ── Chat Header ── -->
+        <header class="glass-header flex items-center justify-between px-4 md:px-6 z-10 flex-shrink-0"
+                style="min-height:56px">
+
+          <!-- LEFT: Status + About + Contributor -->
+          <div class="flex items-center gap-2 md:gap-3 min-w-0">
+            <!-- Status indicator (desktop) -->
+            <div class="hidden md:flex items-center gap-2 flex-shrink-0">
               <span id="status-dot" class="w-2 h-2 rounded-full bg-parchment-500 transition-colors duration-500"></span>
-              <div>
-                <h1 class="font-display text-sm font-semibold glow-gold leading-none tracking-wide">SIDIX</h1>
-                <p id="status-text" class="text-[10px] text-parchment-500 font-medium leading-none mt-0.5">Menghubungi backend…</p>
+              <div class="leading-none">
+                <h1 class="font-display text-sm font-semibold glow-gold tracking-wide">SIDIX</h1>
+                <p id="status-text" class="text-[10px] text-parchment-500 font-medium mt-0.5">Menghubungi…</p>
               </div>
             </div>
-          </div>
-
-          <!-- Persona selector -->
-          <div class="flex items-center gap-3">
-            <label for="persona-selector" class="text-[10px] text-parchment-500 uppercase tracking-widest font-semibold">Persona</label>
-            <div class="relative">
-              <select
-                id="persona-selector"
-                class="bg-warm-800 border border-warm-600 text-parchment-200 rounded-lg px-3 py-1.5
-                       text-[11px] font-semibold uppercase tracking-wider appearance-none pr-7
-                       focus:outline-none focus:ring-1 focus:ring-gold-500/50
-                       hover:border-gold-400/40 transition-colors cursor-pointer"
-                title="Pilih persona"
-              >
-                <option value="MIGHAN">MIGHAN — Kreatif</option>
-                <option value="TOARD">TOARD — Perencanaan</option>
-                <option value="FACH">FACH — Akademik</option>
-                <option value="HAYFAR">HAYFAR — Teknis</option>
-                <option value="INAN">INAN — Sederhana</option>
-              </select>
-              <i data-lucide="chevron-down" class="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-parchment-400 pointer-events-none"></i>
+            <!-- Mobile: just logo + status dot -->
+            <div class="flex md:hidden items-center gap-2">
+              <div class="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0"
+                   style="background:rgba(20,15,8,0.95);border:1px solid rgba(204,152,49,0.3)">
+                <img src="/sidix-logo.svg" alt="SIDIX" class="w-full h-full object-contain p-1" draggable="false" />
+              </div>
+              <span id="status-dot-mobile" class="w-1.5 h-1.5 rounded-full bg-parchment-500 transition-colors duration-500"></span>
             </div>
 
-            <button
-              type="button"
-              id="forget-session-btn"
+            <!-- Separator (desktop) -->
+            <div class="hidden md:block w-px h-5 bg-warm-600/50"></div>
+
+            <!-- About SIDIX → sidixlab.com -->
+            <button id="btn-about-sidix" class="contrib-pill hidden md:flex" title="Baca tentang SIDIX">
+              <i data-lucide="info" class="w-3 h-3"></i>
+              <span id="label-about">Tentang SIDIX</span>
+            </button>
+
+            <!-- Gabung Kontributor -->
+            <button id="btn-contributor" class="contrib-pill hidden md:flex" title="Gabung sebagai kontributor">
+              <i data-lucide="users" class="w-3 h-3"></i>
+              <span id="label-contrib">Gabung Kontributor</span>
+            </button>
+          </div>
+
+          <!-- CENTER: Sign In / Sign Up pill -->
+          <div class="flex items-center justify-center flex-1 px-2 md:px-4">
+            <button id="btn-auth" class="auth-pill" title="Masuk atau daftar">
+              <i data-lucide="user" class="w-3 h-3"></i>
+              <span id="label-auth">Sign In</span>
+            </button>
+          </div>
+
+          <!-- RIGHT: Persona + extras (desktop) -->
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <label for="persona-selector" class="hidden md:block text-[10px] text-parchment-500 uppercase tracking-widest font-semibold">Persona</label>
+            <div class="relative">
+              <select id="persona-selector"
+                class="bg-warm-800 border border-warm-600 text-parchment-200 rounded-lg px-2 py-1 md:px-3 md:py-1.5
+                       text-[11px] font-semibold uppercase tracking-wider appearance-none pr-6
+                       focus:outline-none focus:ring-1 focus:ring-gold-500/50
+                       hover:border-gold-400/40 transition-colors cursor-pointer max-w-[100px] md:max-w-none">
+                <option value="MIGHAN">MIGHAN</option>
+                <option value="TOARD">TOARD</option>
+                <option value="FACH">FACH</option>
+                <option value="HAYFAR">HAYFAR</option>
+                <option value="INAN">INAN</option>
+              </select>
+              <i data-lucide="chevron-down" class="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-parchment-400 pointer-events-none"></i>
+            </div>
+
+            <button type="button" id="forget-session-btn"
               class="hidden text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg border border-warm-600
-                     text-parchment-400 hover:text-parchment-100 hover:border-gold-500/40 transition-colors"
-              title="Hapus sesi terakhir dari server"
-            >
+                     text-parchment-400 hover:text-parchment-100 hover:border-gold-500/40 transition-colors">
               Lupakan sesi
             </button>
 
-            <!-- Context menu -->
-            <button
-              id="chat-menu-btn"
+            <button id="chat-menu-btn"
               class="w-8 h-8 rounded-lg glass flex items-center justify-center text-parchment-400
-                     hover:text-parchment-100 transition-colors"
-              title="Opsi chat"
-            >
+                     hover:text-parchment-100 transition-colors">
               <i data-lucide="more-horizontal" class="w-4 h-4"></i>
             </button>
           </div>
         </header>
 
-        <!-- Messages area -->
-        <div
-          id="chat-messages"
-          class="flex-1 overflow-y-auto px-6 py-8 space-y-6 scroll-smooth relative z-0"
-          aria-live="polite"
-          aria-label="Percakapan"
-        >
+        <!-- ── Messages ── -->
+        <div id="chat-messages"
+          class="flex-1 overflow-y-auto px-4 md:px-6 py-6 md:py-8 space-y-5 md:space-y-6 relative z-0"
+          aria-live="polite" aria-label="Percakapan">
+
           <!-- Empty state -->
-          <div id="chat-empty" class="flex flex-col items-center justify-center h-full text-center space-y-8 select-none">
+          <div id="chat-empty" class="flex flex-col items-center justify-center h-full text-center space-y-6 md:space-y-8 select-none">
             <div class="relative">
               <div class="absolute inset-0 blur-3xl opacity-20 bg-amber-600 rounded-full"></div>
-              <div class="w-20 h-20 rounded-3xl glass flex items-center justify-center relative z-10 overflow-hidden">
-                <img src="/sidix-logo.svg" alt="SIDIX" class="w-14 h-14 object-contain" draggable="false" />
+              <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl glass flex items-center justify-center relative z-10 overflow-hidden">
+                <img src="/sidix-logo.svg" alt="SIDIX" class="w-12 h-12 md:w-14 md:h-14 object-contain" draggable="false" />
               </div>
             </div>
-            <div class="space-y-2">
-              <p class="font-display text-3xl font-bold glow-gold tracking-wide">SIDIX</p>
-              <p class="text-sm text-parchment-400 max-w-xs mx-auto leading-relaxed">
+            <div class="space-y-2 px-4">
+              <p class="font-display text-2xl md:text-3xl font-bold glow-gold tracking-wide">SIDIX</p>
+              <p id="empty-tagline" class="text-sm text-parchment-400 max-w-xs mx-auto leading-relaxed">
                 Diskusi dan tanya apa saja — jujur, bersumber, bisa diverifikasi.
               </p>
             </div>
-            <!-- Quick prompts -->
-            <div class="grid grid-cols-2 gap-3 w-full max-w-md">
-              <button
-                class="quick-prompt academic-card text-xs text-left hover:cursor-pointer"
-                data-prompt="Aku butuh partner buat brainstorm ide. Bantu aku eksplorasi ide dan buat rencana yang solid."
-              >
-                <div class="flex items-center gap-2 mb-1.5">
+
+            <!-- Quick prompts 2x2 grid -->
+            <div class="grid grid-cols-2 gap-2.5 md:gap-3 w-full max-w-sm md:max-w-md px-1">
+              <button class="quick-prompt academic-card text-xs text-left hover:cursor-pointer active:scale-95 transition-transform"
+                data-prompt="Aku butuh partner buat brainstorm ide. Bantu aku eksplorasi dan buat rencana yang solid.">
+                <div class="flex items-center gap-2 mb-1">
                   <i data-lucide="users" class="w-4 h-4 text-gold-400 flex-shrink-0"></i>
                   <p class="font-semibold text-gold-400">Partner</p>
                 </div>
-                <p class="text-parchment-400 leading-snug">Brainstorm, buat rencana, dan riset</p>
+                <p class="text-parchment-400 leading-snug text-[11px]">Brainstorm, rencana & riset</p>
               </button>
-              <button
-                class="quick-prompt academic-card text-xs text-left hover:cursor-pointer"
-                data-prompt="Bantu aku buat aplikasi. Jelaskan langkah-langkah membangun project dari awal."
-              >
-                <div class="flex items-center gap-2 mb-1.5">
+              <button class="quick-prompt academic-card text-xs text-left hover:cursor-pointer active:scale-95 transition-transform"
+                data-prompt="Bantu aku buat aplikasi. Jelaskan langkah-langkah membangun project dari awal.">
+                <div class="flex items-center gap-2 mb-1">
                   <i data-lucide="code-2" class="w-4 h-4 text-gold-400 flex-shrink-0"></i>
-                  <p class="font-semibold text-gold-400">Coding Agent</p>
+                  <p class="font-semibold text-gold-400">Coding</p>
                 </div>
-                <p class="text-parchment-400 leading-snug">Bangun aplikasi, game, website & lebih</p>
+                <p class="text-parchment-400 leading-snug text-[11px]">App, game, website & more</p>
               </button>
-              <button
-                class="quick-prompt academic-card text-xs text-left hover:cursor-pointer"
-                data-prompt="Bantu aku dengan kebutuhan kreatif — desain UI/UX, prompt gambar, atau konten generatif."
-              >
-                <div class="flex items-center gap-2 mb-1.5">
+              <button class="quick-prompt academic-card text-xs text-left hover:cursor-pointer active:scale-95 transition-transform"
+                data-prompt="Bantu aku dengan kebutuhan kreatif — desain UI/UX, prompt gambar, atau konten generatif.">
+                <div class="flex items-center gap-2 mb-1">
                   <i data-lucide="palette" class="w-4 h-4 text-gold-400 flex-shrink-0"></i>
                   <p class="font-semibold text-gold-400">Creative</p>
                 </div>
-                <p class="text-parchment-400 leading-snug">Gambar, UI/UX, Video, TTS & Generative</p>
+                <p class="text-parchment-400 leading-snug text-[11px]">Image, video, TTS & UI</p>
               </button>
-              <button
-                class="quick-prompt academic-card text-xs text-left hover:cursor-pointer"
-                data-prompt="Hai SIDIX! Nggak ada agenda khusus, cuma mau ngobrol santai. Ceritain sesuatu yang menarik dong."
-              >
-                <div class="flex items-center gap-2 mb-1.5">
+              <button class="quick-prompt academic-card text-xs text-left hover:cursor-pointer active:scale-95 transition-transform"
+                data-prompt="Hai SIDIX! Nggak ada agenda khusus, cuma mau ngobrol santai. Ceritain sesuatu yang menarik dong.">
+                <div class="flex items-center gap-2 mb-1">
                   <i data-lucide="coffee" class="w-4 h-4 text-gold-400 flex-shrink-0"></i>
-                  <p class="font-semibold text-gold-400">Chit Chat & Chill</p>
+                  <p class="font-semibold text-gold-400">Chill</p>
                 </div>
-                <p class="text-parchment-400 leading-snug">Ngobrol santai, diskusi bebas</p>
+                <p class="text-parchment-400 leading-snug text-[11px]">Ngobrol santai, bebas</p>
               </button>
             </div>
+
+            <!-- Free badge -->
+            <p id="free-badge" class="text-[11px] text-parchment-600 flex items-center gap-1.5">
+              <i data-lucide="zap" class="w-3 h-3 text-gold-600"></i>
+              <span>Free AI Agent · Open Source · No subscription</span>
+            </p>
           </div>
         </div>
 
-        <!-- Input area -->
-        <footer class="px-6 pb-6 pt-4 glass-header border-t border-warm-600/30 flex-shrink-0">
+        <!-- ── Input footer ── -->
+        <footer class="chat-footer px-3 md:px-6 pb-4 pt-3 glass-header border-t border-warm-600/30 flex-shrink-0">
           <div class="max-w-4xl mx-auto">
             <div class="relative glass rounded-2xl focus-within:border-gold-500/40 transition-all">
-              <textarea
-                id="chat-input"
-                rows="1"
+              <textarea id="chat-input" rows="1"
+                id-placeholder="Tanya SIDIX…"
                 placeholder="Tanya SIDIX…"
-                class="w-full bg-transparent rounded-2xl px-5 py-3.5 pr-24 focus:outline-none
+                class="w-full bg-transparent rounded-2xl px-4 py-3.5 pr-20 focus:outline-none
                        text-sm leading-relaxed text-parchment-100 placeholder:text-parchment-500
-                       min-h-[52px] max-h-36"
-              ></textarea>
-              <div class="absolute right-2 bottom-2 flex items-center gap-1.5">
-                <button
-                  id="attach-btn"
+                       min-h-[52px] max-h-36 resize-none"></textarea>
+              <div class="absolute right-2 bottom-2 flex items-center gap-1">
+                <button id="attach-btn"
                   class="w-8 h-8 flex items-center justify-center text-parchment-500
                          hover:text-gold-400 transition-colors rounded-lg hover:bg-warm-700"
-                  title="Lampirkan file"
-                >
+                  title="Lampirkan">
                   <i data-lucide="paperclip" class="w-4 h-4"></i>
                 </button>
-                <button
-                  id="send-btn"
+                <button id="send-btn"
                   class="w-9 h-9 btn-gold rounded-xl flex items-center justify-center
-                         disabled:opacity-40 disabled:pointer-events-none"
-                  title="Kirim (Enter)"
-                  disabled
-                >
+                         disabled:opacity-40 disabled:pointer-events-none transition-all active:scale-90"
+                  title="Kirim" disabled>
                   <i data-lucide="arrow-up" class="w-4 h-4"></i>
                 </button>
               </div>
             </div>
-            <div class="flex flex-wrap justify-center gap-x-5 gap-y-1 mt-3 text-[11px] text-parchment-400 select-none">
+
+            <!-- Options row (hidden on mobile for space) -->
+            <div class="hidden md:flex flex-wrap justify-center gap-x-5 gap-y-1 mt-2.5 text-[11px] text-parchment-400 select-none">
               <label class="inline-flex items-center gap-1.5 cursor-pointer hover:text-parchment-200">
                 <input type="checkbox" id="opt-corpus-only" class="rounded border-warm-500" />
                 <span>Korpus saja</span>
@@ -251,147 +370,282 @@
                 <span>Mode ringkas</span>
               </label>
             </div>
-            <p class="text-[10px] text-center text-parchment-500 mt-2 uppercase tracking-widest font-medium select-none">
-              SIDIX v1.0 · Mighan-brain-1 · Self-hosted
+
+            <p class="text-[10px] text-center text-parchment-600 mt-1.5 uppercase tracking-widest font-medium select-none">
+              SIDIX v1.0 · Self-hosted · Free
             </p>
           </div>
         </footer>
       </section>
 
-      <!-- ────────────────────────────────────────────────
-           SCREEN: Knowledge Base / Corpus
-      ──────────────────────────────────────────────── -->
+      <!-- ──────────────────────────────────────────────────
+           SCREEN: Knowledge Base
+      ────────────────────────────────────────────────── -->
       <section id="screen-corpus" class="hidden flex-1 flex flex-col overflow-hidden">
-
-        <!-- Corpus header -->
-        <header class="h-14 glass-header flex items-center justify-between px-6 z-10 flex-shrink-0">
+        <header class="h-14 glass-header flex items-center justify-between px-4 md:px-6 z-10 flex-shrink-0">
           <div>
             <h1 class="font-display text-lg font-semibold glow-gold tracking-wide">Knowledge Base</h1>
-            <p class="text-[10px] text-parchment-500 font-medium">Kelola korpus · RAG index</p>
+            <p class="text-[10px] text-parchment-500 font-medium">Corpus · RAG index</p>
           </div>
-          <button
-            id="add-doc-btn"
-            class="btn-gold px-4 py-2 text-xs font-semibold flex items-center gap-2"
-          >
-            <i data-lucide="plus" class="w-4 h-4"></i>
-            Tambah Dokumen
+          <button id="add-doc-btn" class="btn-gold px-3 py-1.5 text-xs font-semibold flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i> Tambah
           </button>
         </header>
-
-        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
           <div class="max-w-5xl mx-auto w-full space-y-6">
-
-            <!-- Storage bar -->
             <div class="space-y-1.5">
               <div class="flex justify-between text-[10px] font-semibold uppercase tracking-widest">
                 <span class="text-parchment-500">Storage</span>
                 <span id="storage-label" class="text-gold-400">— / —</span>
               </div>
-              <div class="storage-bar">
-                <div id="storage-fill" class="storage-bar-fill" style="width:0%"></div>
-              </div>
+              <div class="storage-bar"><div id="storage-fill" class="storage-bar-fill" style="width:0%"></div></div>
             </div>
-
-            <!-- Document grid -->
             <div id="corpus-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Injected by main.ts -->
               <div class="col-span-full flex items-center justify-center py-12 text-parchment-500 text-sm">
-                <i data-lucide="loader-circle" class="w-5 h-5 animate-spin mr-2"></i>
-                Memuat daftar dokumen…
+                <i data-lucide="loader-circle" class="w-5 h-5 animate-spin mr-2"></i> Memuat…
               </div>
             </div>
-
-            <!-- Drop zone -->
-            <div
-              id="drop-zone"
-              class="drop-zone flex flex-col items-center justify-center p-10 text-center space-y-4 cursor-pointer"
-            >
+            <div id="drop-zone" class="drop-zone flex flex-col items-center justify-center p-8 text-center space-y-4 cursor-pointer">
               <i data-lucide="upload-cloud" class="w-10 h-10 text-parchment-400"></i>
               <div>
                 <p class="font-medium text-parchment-200">Drag &amp; Drop file di sini</p>
-                <p class="text-xs text-parchment-500 mt-1">PDF, TXT, MD, CSV · Maks 10 MB per file</p>
+                <p class="text-xs text-parchment-500 mt-1">PDF, TXT, MD, CSV · Maks 10 MB</p>
               </div>
               <button class="btn-gold px-4 py-1.5 text-xs">Pilih File</button>
               <input id="file-input" type="file" class="hidden" multiple accept=".pdf,.txt,.md,.csv" />
             </div>
-
           </div>
         </div>
       </section>
 
-      <!-- ────────────────────────────────────────────────
+      <!-- ──────────────────────────────────────────────────
            SCREEN: Settings
-      ──────────────────────────────────────────────── -->
+      ────────────────────────────────────────────────── -->
       <section id="screen-settings" class="hidden flex-1 flex overflow-hidden">
-
-        <!-- Settings sidebar -->
-        <aside class="w-56 glass-sidebar flex flex-col p-5 gap-6 flex-shrink-0">
+        <aside class="w-52 md:w-56 glass-sidebar flex flex-col p-4 md:p-5 gap-6 flex-shrink-0">
           <div>
             <h2 class="font-display text-lg font-bold glow-gold">Pengaturan</h2>
             <p class="text-[10px] text-parchment-500 uppercase tracking-widest font-semibold mt-0.5">Workspace</p>
           </div>
-
-          <!-- Rendered dynamically by main.ts based on admin mode -->
           <nav class="settings-nav flex flex-col gap-1"></nav>
-
           <div class="mt-auto pt-4 border-t border-warm-600/30">
-            <button
-              id="reset-workspace-btn"
+            <button id="reset-workspace-btn"
               class="w-full px-3 py-2.5 rounded-xl text-xs font-bold text-status-failed
-                     hover:bg-warm-700 transition-all flex items-center gap-3"
-            >
+                     hover:bg-warm-700 transition-all flex items-center gap-3">
               <i data-lucide="trash-2" class="w-4 h-4"></i> Reset Workspace
             </button>
           </div>
         </aside>
-
-        <!-- Settings content pane -->
-        <div class="flex-1 overflow-y-auto p-8">
-          <div id="settings-content" class="max-w-xl w-full mx-auto space-y-8">
-            <!-- Injected by main.ts -->
-          </div>
+        <div class="flex-1 overflow-y-auto p-5 md:p-8">
+          <div id="settings-content" class="max-w-xl w-full mx-auto space-y-8"></div>
         </div>
       </section>
 
     </main>
 
-    <!-- ════════ ADMIN LOGIN MODAL ════════ -->
+    <!-- ════════════════════════════════════════════════════
+         MOBILE BOTTOM NAV (native app feel)
+    ════════════════════════════════════════════════════ -->
+    <nav id="bottom-nav" class="pb-safe">
+      <div class="flex items-center justify-around px-2 py-2">
+        <button id="mob-nav-chat"
+          class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all mob-nav-active"
+          aria-label="Chat">
+          <i data-lucide="message-square" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium" id="mob-label-chat">Chat</span>
+        </button>
+
+        <button id="mob-nav-about"
+          class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all text-parchment-500 hover:text-parchment-300"
+          aria-label="Tentang SIDIX">
+          <i data-lucide="info" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium" id="mob-label-about">Tentang</span>
+        </button>
+
+        <button id="mob-nav-contrib"
+          class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all text-parchment-500 hover:text-parchment-300"
+          aria-label="Gabung Kontributor">
+          <i data-lucide="users" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium" id="mob-label-contrib">Kontributor</span>
+        </button>
+
+        <button id="mob-nav-settings"
+          class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all text-parchment-500 hover:text-parchment-300"
+          aria-label="Pengaturan">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium" id="mob-label-settings">Setting</span>
+        </button>
+
+        <button id="mob-nav-auth"
+          class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all text-gold-400 hover:text-gold-300"
+          aria-label="Sign In">
+          <i data-lucide="user" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium" id="mob-label-auth">Sign In</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ════════════════════════════════════════════════════
+         ABOUT SIDIX MODAL (slide-up sheet)
+    ════════════════════════════════════════════════════ -->
+    <div id="about-modal" class="hidden fixed inset-0 z-[150] contrib-modal-backdrop">
+      <div class="about-modal-card">
+        <!-- Handle bar -->
+        <div class="w-10 h-1 rounded-full bg-warm-600 mx-auto mb-5"></div>
+
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 rounded-2xl mx-auto mb-4 overflow-hidden flex items-center justify-center"
+               style="background:rgba(20,15,8,0.95);border:1px solid rgba(204,152,49,0.35)">
+            <img src="/sidix-logo.svg" alt="SIDIX" class="w-11 h-11 object-contain" draggable="false" />
+          </div>
+          <h2 class="font-display text-2xl font-bold glow-gold">SIDIX</h2>
+          <p id="about-subtitle" class="text-xs text-parchment-400 mt-1">Free AI Agent · Open Source · Self-Hosted</p>
+        </div>
+
+        <div class="space-y-4 text-sm text-parchment-300 leading-relaxed">
+          <p id="about-desc1">SIDIX adalah AI agent gratis yang dibangun di atas prinsip <strong class="text-gold-400">Sidq</strong> (kejujuran), <strong class="text-gold-400">Sanad</strong> (sitasi sumber), dan <strong class="text-gold-400">Tabayyun</strong> (verifikasi). Setiap jawaban berlabel FAKTA / OPINI / TIDAK TAHU.</p>
+          <p id="about-desc2">Open source sepenuhnya. Tidak ada biaya langganan. Data kamu tetap di server kami, bukan dijual ke pihak ketiga.</p>
+
+          <div class="grid grid-cols-2 gap-3 my-4">
+            <div class="academic-card text-center py-3">
+              <p class="text-[10px] text-parchment-500 uppercase tracking-widest mb-1">Lisensi</p>
+              <p class="text-sm font-semibold text-parchment-100">MIT Open Source</p>
+            </div>
+            <div class="academic-card text-center py-3">
+              <p class="text-[10px] text-parchment-500 uppercase tracking-widest mb-1">Inference</p>
+              <p class="text-sm font-semibold text-parchment-100">Self-Hosted</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 mt-6">
+          <a href="https://sidixlab.com" target="_blank" rel="noopener"
+            class="w-full py-3 rounded-xl text-sm font-semibold btn-gold text-center flex items-center justify-center gap-2">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+            <span id="about-cta-main">Kunjungi sidixlab.com</span>
+          </a>
+          <a href="https://github.com/fahmiwol/sidix" target="_blank" rel="noopener"
+            class="w-full py-2.5 rounded-xl text-sm font-medium text-center text-parchment-400
+                   border border-warm-600 hover:border-gold-500/40 hover:text-parchment-100 transition-all flex items-center justify-center gap-2">
+            <i data-lucide="code-2" class="w-4 h-4"></i>
+            GitHub / Source Code
+          </a>
+          <button id="about-close" class="text-xs text-parchment-600 hover:text-parchment-400 py-2 transition-colors"
+            id-text="Tutup">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         CONTRIBUTOR MODAL
+    ════════════════════════════════════════════════════ -->
+    <div id="contrib-modal" class="hidden fixed inset-0 z-[150] contrib-modal-backdrop">
+      <div class="contrib-modal-card">
+        <!-- Handle -->
+        <div class="w-10 h-1 rounded-full bg-warm-600 mx-auto mb-5"></div>
+
+        <div class="mb-5">
+          <h2 class="font-display text-xl font-bold glow-gold" id="contrib-title">Gabung Kontributor</h2>
+          <p class="text-xs text-parchment-400 mt-1" id="contrib-subtitle">Developer, researcher, akademisi — semua welcome!</p>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="text-[11px] text-parchment-500 uppercase tracking-wider font-semibold" id="label-fullname">Nama Lengkap</label>
+            <input id="contrib-name" type="text" autocomplete="name"
+              placeholder="Fahmi Wolhuter"
+              class="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-warm-900/60 border border-warm-600/50 text-sm
+                     text-parchment-100 focus:border-gold-500/50 focus:outline-none placeholder:text-parchment-600" />
+          </div>
+          <div>
+            <label class="text-[11px] text-parchment-500 uppercase tracking-wider font-semibold">Email</label>
+            <input id="contrib-email" type="email" autocomplete="email"
+              placeholder="kamu@email.com"
+              class="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-warm-900/60 border border-warm-600/50 text-sm
+                     text-parchment-100 focus:border-gold-500/50 focus:outline-none placeholder:text-parchment-600" />
+          </div>
+          <div>
+            <label class="text-[11px] text-parchment-500 uppercase tracking-wider font-semibold" id="label-role">Peran Kamu</label>
+            <div class="mt-1.5 grid grid-cols-3 gap-2">
+              <button class="role-btn py-2 rounded-xl text-xs font-semibold border border-warm-600
+                             text-parchment-400 hover:border-gold-500/50 transition-all" data-role="developer">
+                💻 Developer
+              </button>
+              <button class="role-btn py-2 rounded-xl text-xs font-semibold border border-warm-600
+                             text-parchment-400 hover:border-gold-500/50 transition-all" data-role="researcher">
+                🔬 Researcher
+              </button>
+              <button class="role-btn py-2 rounded-xl text-xs font-semibold border border-warm-600
+                             text-parchment-400 hover:border-gold-500/50 transition-all" data-role="academic">
+                🎓 Akademisi
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] text-parchment-500 uppercase tracking-wider font-semibold" id="label-interest">Mau berkontribusi ke?</label>
+            <textarea id="contrib-interest" rows="2"
+              placeholder="Contoh: bikin fitur TTS, riset epistemologi Islam, dsb"
+              class="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-warm-900/60 border border-warm-600/50 text-sm
+                     text-parchment-100 focus:border-gold-500/50 focus:outline-none placeholder:text-parchment-600 resize-none"></textarea>
+          </div>
+
+          <!-- Newsletter checkbox -->
+          <label class="flex items-start gap-3 cursor-pointer pt-1 group">
+            <div class="relative flex-shrink-0 mt-0.5">
+              <input type="checkbox" id="contrib-newsletter" class="sr-only peer" checked />
+              <div class="w-5 h-5 rounded-md border border-warm-600 bg-warm-900/60 peer-checked:bg-gold-500
+                          peer-checked:border-gold-500 transition-all flex items-center justify-center">
+                <i data-lucide="check" class="w-3 h-3 text-warm-950 hidden peer-checked:block"></i>
+              </div>
+            </div>
+            <span class="text-xs text-parchment-400 leading-relaxed group-hover:text-parchment-200 transition-colors" id="label-newsletter">
+              Saya mau dapat newsletter & update terbaru SIDIX via email
+            </span>
+          </label>
+        </div>
+
+        <p id="contrib-status" class="hidden text-xs text-center mt-3"></p>
+
+        <div class="flex gap-3 mt-5">
+          <button id="contrib-cancel"
+            class="flex-1 py-2.5 rounded-xl text-sm text-parchment-400 border border-warm-600
+                   hover:bg-warm-700 transition-all">
+            <span id="label-cancel">Batal</span>
+          </button>
+          <button id="contrib-submit"
+            class="flex-2 flex-1 py-2.5 rounded-xl text-sm font-semibold btn-gold disabled:opacity-40">
+            <span id="label-submit">Daftar Sekarang</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         ADMIN LOGIN MODAL
+    ════════════════════════════════════════════════════ -->
     <div id="admin-pin-modal" class="hidden fixed inset-0 z-[999] flex items-center justify-center bg-warm-950/90 backdrop-blur-sm">
-      <div class="glass rounded-2xl p-8 w-full max-w-xs shadow-2xl border border-gold-500/20 text-center space-y-5">
+      <div class="glass rounded-2xl p-8 w-full max-w-xs shadow-2xl border border-gold-500/20 text-center space-y-5 mx-4">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto overflow-hidden"
              style="background:rgba(30,22,14,0.9);border:1px solid rgba(204,152,49,0.3)">
           <img src="/sidix-logo.svg" alt="SIDIX" class="w-9 h-9 object-contain" draggable="false" />
         </div>
         <div>
           <h3 class="font-display font-bold text-parchment-100 text-lg">SIDIX Control</h3>
-          <p class="text-xs text-parchment-500 mt-1">Login diperlukan untuk mengakses panel admin</p>
+          <p class="text-xs text-parchment-500 mt-1">Login untuk akses panel admin</p>
         </div>
         <div class="space-y-3 text-left">
-          <input
-            id="admin-username-input"
-            type="text"
-            placeholder="Username"
-            autocomplete="username"
+          <input id="admin-username-input" type="text" placeholder="Username" autocomplete="username"
             class="w-full bg-warm-800 border border-warm-600 text-parchment-100 rounded-xl px-4 py-3
-                   text-sm font-mono focus:outline-none focus:ring-1
-                   focus:ring-gold-500/50 placeholder:text-parchment-500"
-          />
-          <input
-            id="admin-pin-input"
-            type="password"
-            placeholder="Password"
-            autocomplete="current-password"
+                   text-sm font-mono focus:outline-none focus:ring-1 focus:ring-gold-500/50 placeholder:text-parchment-500" />
+          <input id="admin-pin-input" type="password" placeholder="Password" autocomplete="current-password"
             class="w-full bg-warm-800 border border-warm-600 text-parchment-100 rounded-xl px-4 py-3
-                   text-sm font-mono focus:outline-none focus:ring-1
-                   focus:ring-gold-500/50 placeholder:text-parchment-500"
-          />
+                   text-sm font-mono focus:outline-none focus:ring-1 focus:ring-gold-500/50 placeholder:text-parchment-500" />
         </div>
         <p id="admin-pin-error" class="hidden text-xs text-status-failed">Username atau password salah.</p>
         <div class="flex gap-3">
           <button id="admin-pin-cancel" class="flex-1 px-4 py-2.5 rounded-xl text-sm text-parchment-400
                   hover:bg-warm-700 transition-all border border-warm-600">Batal</button>
-          <button id="admin-pin-confirm" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold
-                  btn-gold">Login</button>
+          <button id="admin-pin-confirm" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold btn-gold">Login</button>
         </div>
       </div>
     </div>
