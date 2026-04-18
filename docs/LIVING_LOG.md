@@ -1178,3 +1178,77 @@ Auto-trigger:
 - NOTE: Token expiry saat ini: 59 hari (expires ~Juni 2026). Alert muncul otomatis di `/health` dan `/threads/token-alert` saat sisa < 7 hari.
 
 - NOTE: Jadwal aman post: 1x/hari (08:00 WIB = 01:00 UTC); harvest: 4x/hari; mentions check: 3x/hari. Total ~40-60 API calls/hari — jauh di bawah limit Meta.
+
+### 2026-04-18 — Anthropic Haiku Fallback + QnA Self-Learning Pipeline + 3-Post Series
+
+- IMPL: **`anthropic_llm.py`** — wrapper hemat Anthropic claude-3-haiku-20240307:
+  - Model paling murah: $0.25/1M input, $1.25/1M output
+  - Max 600 token output per jawaban (hemat)
+  - Lazy load client (skip jika ANTHROPIC_API_KEY tidak di-set)
+  - Log usage + estimasi cost per request ke console
+  - `get_api_status()` untuk admin dashboard
+  - ANTHROPIC_API_KEY: disimpan di `/opt/sidix/apps/.env` di VPS (tidak di git)
+
+- IMPL: **Inference chain baru** — 4 tier fallback:
+  1. Ollama (lokal, gratis, prioritas)
+  2. LoRA adapter Qwen2.5-7B (GPU)
+  3. **Anthropic claude-3-haiku** (cloud fallback baru — HEMAT)
+  4. Mock response ("SIDIX sedang setup")
+  - `agent_react.py`: Anthropic dipasang di 2 titik synthesis (ada corpus + tidak ada corpus)
+  - `agent_serve.py`: `_llm_generate()` juga updated dengan Anthropic tier
+
+- IMPL: **`qna_recorder.py`** — pipeline self-learning SIDIX:
+  - `record_qna()` — rekam setiap chat ke `.data/qna_log/qna_YYYYMMDD.jsonl`
+  - `update_quality()` — rating jawaban 1-5 untuk filter training data
+  - `auto_export_to_corpus()` — export ke `brain/public/research_notes/` setiap 50 QnA
+  - `export_training_pairs()` — format supervised pairs untuk LoRA fine-tuning
+  - `get_qna_stats()` — statistik N hari terakhir
+  - Dipanggil otomatis setelah setiap `/ask/stream` selesai
+
+- IMPL: **Endpoints learning** di `agent_serve.py`:
+  - `GET /learning/stats` — QnA stats 7 hari
+  - `POST /learning/export-corpus` — export ke corpus (admin)
+  - `POST /learning/export-training` — export training pairs (admin)
+  - `POST /learning/rate/{session_id}` — rating 1-5
+  - `GET /learning/anthropic-status` — cek API key (admin)
+
+- IMPL: **`threads_series.py`** — mesin 3-post series harian SIDIX:
+  - 10 sudut konten (ISLAMIC, TECH_ID, TECH_EN, US/EU/UK/AU, DEV_INVITE, FEATURE_LAUNCH, COMMUNITY)
+  - Setiap sudut punya Hook + Detail + CTA bilingual lengkap
+  - `generate_series(day)` → konten kontekstual berdasarkan hari
+  - State tracking: sudah dipost atau belum per tipe
+
+- IMPL: **`run_series_post()` di `threads_scheduler.py`**:
+  - Post `hook` (08:00 WIB) / `detail` (12:00 WIB) / `cta` (18:00 WIB)
+  - `preview_today_series()` — preview tanpa kirim
+
+- IMPL: **4 endpoints series di `agent_serve.py`**:
+  - `GET /threads/series/today` — preview series + status
+  - `GET /threads/series/preview?day=N` — simulasi hari lain
+  - `POST /threads/series/post/{type}` — post hook/detail/cta
+  - `GET /threads/series/stats` — statistik series
+
+- IMPL: **Login gate + user onboarding** di `SIDIX_USER_UI/src/main.ts`:
+  - 1 chat gratis → modal login (Google OAuth + magic link email)
+  - 5-pertanyaan onboarding interview setelah login (auto-chat dari SIDIX)
+  - Jawaban disimpan ke Supabase `user_onboarding` table
+  - Beta tester tracking via `user_profiles` + `beta_testers` Supabase tables
+
+- IMPL: **`supabase.ts` diperluas** — auth + profil + onboarding:
+  - `signInWithGoogle()`, `signInWithEmail()` (passwordless OTP)
+  - `upsertUserProfile()`, `getUserProfile()`
+  - `saveOnboarding()` — simpan 5 jawaban interview
+  - `saveDeveloperProfile()` — profil kontributor developer
+  - `trackBetaTester()` — counter beta tester
+
+- UPDATE: **`GET /health`** — tambah field `qna_recorded_today` + Anthropic presence update `model_mode`
+
+- TEST: VPS deploy berhasil: `anthropic_available: true`, model loaded, PM2 restart OK
+  - `{"available":true,"model":"claude-3-haiku-20240307","key_set":true}`
+  - `model_mode: ollama` (Ollama tetap prioritas — Anthropic standby)
+
+- DECISION: Gunakan Anthropic claude-3-haiku sementara ($4.93 kredit ≈ 9000+ chat) sambil menunggu Ollama lokal stabil + LoRA adapter siap. Tidak diexpose ke user — transparan di balik inference chain.
+
+- DOC: Research note 121 — `brain/public/research_notes/121_qna_self_learning_pipeline.md` — pipeline self-learning, kalkulasi hemat Haiku, format JSONL, training pairs.
+
+- NOTE: API key tersimpan di `/opt/sidix/apps/.env` saja. Tidak di-commit ke git. Tidak diexpose ke user (mode_mode di health hanya tampilkan "ollama"/"anthropic_haiku"/"mock" — tanpa detail key).
