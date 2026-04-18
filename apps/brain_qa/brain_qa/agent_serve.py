@@ -177,22 +177,27 @@ class AskRequest(BaseModel):
 
 
 # ── LLM generate function ─────────────────────────────────────────────────────
-# Priority: 1) Ollama (local, no vendor)  2) LoRA adapter (GPU)  3) Mock fallback
+# Priority: 1) Ollama (local)  2) LoRA adapter (GPU)  3) Anthropic Haiku (cloud, hemat)  4) Mock
 
 def _llm_generate(
     prompt: str,
     system: str,
     max_tokens: int = 256,
     temperature: float = 0.7,
+    context_snippets: list[str] | None = None,
 ) -> tuple[str, str]:
     """
     Returns (generated_text, mode).
-    mode = "ollama" | "local_lora" | "mock"
+    mode = "ollama" | "local_lora" | "anthropic_haiku" | "mock"
 
-    Chain:
-    1. Ollama — local LLM (qwen2.5, llama3, dll) via http://localhost:11434
-    2. LoRA adapter — fine-tuned Qwen2.5-7B (butuh GPU + adapter weights)
-    3. Mock fallback — info cara setup
+    Chain prioritas:
+    1. Ollama — local LLM, gratis, tercepat
+    2. LoRA adapter — fine-tuned Qwen2.5-7B (butuh GPU)
+    3. Anthropic Haiku — cloud fallback, hemat ($0.25/1M input)
+    4. Mock — info cara setup
+
+    context_snippets: hasil RAG, diteruskan ke Anthropic agar bisa jawab
+    berdasarkan knowledge base tanpa re-search.
     """
     # ── 1. Ollama (prioritas utama) ───────────────────────────────────────────
     try:
@@ -219,16 +224,27 @@ def _llm_generate(
     if mode == "local_lora":
         return text, mode
 
-    # ── 3. Mock fallback ──────────────────────────────────────────────────────
+    # ── 3. Anthropic Haiku (cloud fallback, hemat) ────────────────────────────
+    try:
+        from .anthropic_llm import anthropic_available, anthropic_generate
+        if anthropic_available():
+            text, mode = anthropic_generate(
+                prompt=prompt,
+                system=system,
+                max_tokens=min(max_tokens, 600),  # hemat token
+                temperature=temperature,
+                context_snippets=context_snippets,
+            )
+            if mode == "anthropic_haiku" and text:
+                return text, mode
+    except Exception:
+        pass
+
+    # ── 4. Mock fallback ──────────────────────────────────────────────────────
     return (
-        "⚠ SIDIX belum terhubung ke LLM.\n\n"
-        "**Cara aktifkan:**\n"
-        "```\n"
-        "# Install Ollama (di VPS/lokal)\n"
-        "curl -fsSL https://ollama.ai/install.sh | sh\n"
-        "ollama pull qwen2.5:7b\n"
-        "```\n"
-        "Setelah itu restart brain_qa, SIDIX langsung bisa ngobrol.",
+        "⚠ SIDIX sedang dalam mode setup. Sabar ya!\n\n"
+        "Tim kami sedang menyiapkan inference engine lokal. "
+        "Sementara itu, kamu bisa coba lagi beberapa saat lagi.",
         "mock",
     )
 
@@ -328,6 +344,27 @@ def create_app() -> "FastAPI":
         except Exception:
             pass
 
+        # Anthropic status (internal, tidak expose ke user)
+        anthropic_ready = False
+        try:
+            from .anthropic_llm import anthropic_available
+            anthropic_ready = anthropic_available()
+        except Exception:
+            pass
+
+        # Update effective_mode jika Anthropic tersedia sebagai fallback
+        if not ollama_info.get("available") and not model_ready and anthropic_ready:
+            effective_mode = "anthropic_haiku"
+
+        # QnA stats
+        qna_today = 0
+        try:
+            from .qna_recorder import get_qna_stats
+            qna_stats = get_qna_stats(days=1)
+            qna_today = qna_stats.get("total", 0)
+        except Exception:
+            pass
+
         return {
             # Format baru (agent)
             "status": "ok",
@@ -347,6 +384,8 @@ def create_app() -> "FastAPI":
             "engine_build": os.environ.get("BRAIN_QA_ENGINE_BUILD", "0.1.0").strip() or "0.1.0",
             # Threads status + alert
             "threads_alert": threads_alert,
+            # Learning stats
+            "qna_recorded_today": qna_today,
             # Format lama (kompatibel UI)
             "ok": True,
             "version": "0.1.0",
@@ -729,6 +768,23 @@ def create_app() -> "FastAPI":
                         "snippet": "",
                     })
                     yield f"data: {event}\n\n"
+
+            # ── Record QnA untuk self-learning ───────────────────────────────
+            try:
+                from .qna_recorder import record_qna
+                citations_list = []
+                for step in session.steps:
+                    citations_list.extend(step.action_args.get("_citations", []))
+                record_qna(
+                    question=req.question,
+                    answer=answer,
+                    session_id=session.session_id,
+                    persona=req.persona,
+                    citations=citations_list,
+                    model=getattr(session, "model_mode", "unknown"),
+                )
+            except Exception:
+                pass  # jangan ganggu stream jika recorder error
 
             # Done
             event = _json.dumps({
@@ -1857,6 +1913,120 @@ h1{{color:#0af}}p{{color:#aaa}}a{{color:#0af}}</style></head>
             auto_reply = bool((body or {}).get("auto_reply", False))
             dry_run = bool((body or {}).get("dry_run", True))
             return run_mention_monitor(auto_reply=auto_reply, dry_run=dry_run)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── QnA Learning Pipeline ─────────────────────────────────────────────────
+    @app.get("/learning/stats", tags=["Learning"])
+    def learning_stats(days: int = 7):
+        """Statistik QnA yang direkam untuk self-learning SIDIX."""
+        try:
+            from .qna_recorder import get_qna_stats
+            return {"ok": True, "stats": get_qna_stats(days=days)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/learning/export-corpus", tags=["Learning"])
+    def learning_export_corpus(request: Request):
+        """Export QnA terbaru ke corpus brain/ untuk BM25 reindex."""
+        if not _admin_ok(request):
+            raise HTTPException(status_code=403, detail="Admin token diperlukan")
+        try:
+            from .qna_recorder import auto_export_to_corpus
+            return auto_export_to_corpus()
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/learning/export-training", tags=["Learning"])
+    def learning_export_training(request: Request, body: dict[str, Any] = {}):
+        """Export QnA sebagai supervised training pairs untuk fine-tuning LoRA."""
+        if not _admin_ok(request):
+            raise HTTPException(status_code=403, detail="Admin token diperlukan")
+        try:
+            from .qna_recorder import export_training_pairs
+            min_q = (body or {}).get("min_quality")
+            days = int((body or {}).get("days", 30))
+            return export_training_pairs(min_quality=min_q, days=days)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/learning/rate/{session_id}", tags=["Learning"])
+    def learning_rate_session(session_id: str, body: dict[str, Any] = {}):
+        """Update kualitas jawaban (1-5) untuk training data filter."""
+        try:
+            from .qna_recorder import update_quality
+            quality = int((body or {}).get("quality", 3))
+            quality = max(1, min(5, quality))
+            ok = update_quality(session_id, quality)
+            return {"ok": ok}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/learning/anthropic-status", tags=["Learning"])
+    def learning_anthropic_status(request: Request):
+        """Status Anthropic API (admin only)."""
+        if not _admin_ok(request):
+            raise HTTPException(status_code=403, detail="Admin token diperlukan")
+        try:
+            from .anthropic_llm import get_api_status
+            return get_api_status()
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── Threads: Series (3-post harian) ──────────────────────────────────────
+    @app.get("/threads/series/today", tags=["Threads"])
+    def threads_series_today():
+        """
+        Preview series hari ini: angle, topic, language, Hook/Detail/CTA + status posted.
+        """
+        try:
+            from .threads_scheduler import preview_today_series
+            return preview_today_series()
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/threads/series/preview", tags=["Threads"])
+    def threads_series_preview(day: int = -1):
+        """
+        Preview series untuk hari tertentu tanpa mengirim.
+        day=-1 = hari ini, atau angka lain untuk simulasi seri berbeda.
+        """
+        try:
+            from .threads_scheduler import preview_today_series
+            import datetime
+            actual_day = datetime.datetime.utcnow().timetuple().tm_yday if day == -1 else day
+            return preview_today_series(day=actual_day)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/threads/series/post/{post_type}", tags=["Threads"])
+    def threads_series_post(post_type: str, body: dict[str, Any] = {}):
+        """
+        Post salah satu bagian series: hook | detail | cta.
+
+        Body (opsional):
+          force: bool   — posting ulang walau sudah dipost hari ini (default false)
+          dry_run: bool — preview saja tanpa kirim (default false)
+
+        Jadwal ideal (WIB):
+          hook   → jam 08:00
+          detail → jam 12:00
+          cta    → jam 18:00
+        """
+        try:
+            from .threads_scheduler import run_series_post
+            force = bool((body or {}).get("force", False))
+            dry_run = bool((body or {}).get("dry_run", False))
+            return run_series_post(post_type=post_type, force=force, dry_run=dry_run)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/threads/series/stats", tags=["Threads"])
+    def threads_series_stats():
+        """Statistik series: total post per angle, bahasa, status hari ini."""
+        try:
+            from .threads_series import get_series_stats
+            return {"ok": True, "stats": get_series_stats()}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 

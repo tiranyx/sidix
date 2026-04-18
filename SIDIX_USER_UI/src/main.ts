@@ -23,7 +23,13 @@ import {
   type AskInferenceOpts,
 } from './api';
 
-import { subscribeNewsletter, submitFeedbackDB, type FeedbackType } from './lib/supabase';
+import {
+  subscribeNewsletter, submitFeedbackDB, type FeedbackType,
+  signInWithGoogle, signInWithEmail, getCurrentUser, signOut, onAuthChange,
+  upsertUserProfile, getUserProfile, saveOnboarding, saveDeveloperProfile,
+  trackBetaTester,
+  type UserRole, type OnboardingAnswers,
+} from './lib/supabase';
 
 // ── Bootstrap icons ──────────────────────────────────────────────────────────
 function initIcons() {
@@ -143,6 +149,274 @@ applyAdminUI();
 if (IS_CTRL && !isAdmin()) {
   openPinModal();
 }
+
+// ── User Auth & Login Gate ────────────────────────────────────────────────────
+// Sistem: 1 chat gratis → paksa login → onboarding interview → lanjut
+// Data dikumpulkan: nama, email, fitur request, review AI, ekspektasi
+
+const CHAT_COUNT_KEY = 'sidix_chat_count';
+const USER_ONBOARDED_KEY = 'sidix_onboarded';
+const FREE_CHAT_LIMIT = 1;
+
+/** State current user (null = belum login) */
+let currentAuthUser: import('@supabase/supabase-js').User | null = null;
+
+/** Step onboarding: 0 = belum mulai, 1-7 = pertanyaan, 8 = selesai */
+let onboardingStep = 0;
+let onboardingAnswers: Partial<OnboardingAnswers> = {};
+
+const ONBOARDING_QUESTIONS = [
+  "Hei! Senang kamu mau coba SIDIX 🎉\n\nSebelum mulai, boleh bantu kami berkembang? Ada beberapa pertanyaan singkat.\n\n**Pertanyaan 1/5:** Fitur AI apa yang paling kamu butuhkan sehari-hari? (contoh: nulis, coding, riset, ngobrol, dll)",
+  "**Pertanyaan 2/5:** AI agent apa yang biasa kamu pakai? (ChatGPT, Claude, Gemini, Copilot, dll — atau belum pakai yang lain?)",
+  "**Pertanyaan 3/5:** Apa yang paling kamu suka dari AI yang ada sekarang?",
+  "**Pertanyaan 4/5:** Apa yang paling bikin frustrasi atau kurang dari AI yang ada?",
+  "**Pertanyaan 5/5:** Kalau SIDIX bisa tambah 1 fitur minggu ini khusus buat kamu, fitur apa itu?",
+  "Hampir selesai! **Kamu ini lebih cocok sebagai:**\n\n1️⃣ User biasa (mau pakai AI untuk produktivitas)\n2️⃣ Developer (mau ikut kontribusi code)\n3️⃣ Researcher/Akademisi (mau kolaborasi riset)\n\nJawab dengan angka 1, 2, atau 3 ya!",
+  "Terima kasih sudah meluangkan waktu! 🙏\n\nJawaban kamu sangat berarti untuk pengembangan SIDIX.\n\n**Kamu adalah salah satu beta tester pertama SIDIX!** 🚀\n\nSIDIX adalah free AI agent open source — dibangun untuk komunitas Indonesia & global, gratis sepenuhnya, tidak ada hidden cost.\n\nAda pertanyaan lain? Langsung tanya ke sini — saya siap membantu!",
+];
+
+function getChatCount(): number {
+  return parseInt(localStorage.getItem(CHAT_COUNT_KEY) || '0', 10);
+}
+
+function incrementChatCount(): number {
+  const n = getChatCount() + 1;
+  localStorage.setItem(CHAT_COUNT_KEY, String(n));
+  return n;
+}
+
+function isLoggedIn(): boolean {
+  return currentAuthUser !== null;
+}
+
+function isOnboarded(): boolean {
+  return localStorage.getItem(USER_ONBOARDED_KEY) === '1';
+}
+
+function markOnboarded(): void {
+  localStorage.setItem(USER_ONBOARDED_KEY, '1');
+}
+
+// ── Inject Login Modal HTML ───────────────────────────────────────────────────
+function injectLoginModal(): void {
+  if (document.getElementById('login-modal')) return; // sudah ada
+  const modal = document.createElement('div');
+  modal.id = 'login-modal';
+  modal.className = 'fixed inset-0 z-50 hidden flex items-center justify-center p-4';
+  modal.style.background = 'rgba(10,8,5,0.92)';
+  modal.style.backdropFilter = 'blur(12px)';
+  modal.innerHTML = `
+    <div class="academic-card w-full max-w-sm space-y-6 animate-fsu" style="border-color:rgba(204,152,49,0.3)">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center overflow-hidden"
+             style="background:rgba(20,15,8,0.95);border:1px solid rgba(204,152,49,0.35)">
+          <img src="/sidix-logo.svg" alt="SIDIX" class="w-10 h-10 object-contain" />
+        </div>
+        <h2 class="font-display text-2xl font-bold glow-gold">Lanjut dengan SIDIX</h2>
+        <p class="text-sm text-parchment-400">
+          Kamu sudah coba 1 chat gratis 🎉<br>
+          Login untuk lanjut — dan bantu kami berkembang!
+        </p>
+      </div>
+
+      <div class="space-y-3">
+        <button id="login-google-btn" type="button"
+          class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold
+                 bg-white text-gray-800 hover:bg-gray-100 transition-all border border-warm-600/20">
+          <svg class="w-5 h-5" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Lanjut dengan Google (Gmail)
+        </button>
+
+        <div class="relative flex items-center gap-3">
+          <div class="flex-1 h-px bg-warm-600/40"></div>
+          <span class="text-[11px] text-parchment-500 flex-shrink-0">atau</span>
+          <div class="flex-1 h-px bg-warm-600/40"></div>
+        </div>
+
+        <div class="space-y-2">
+          <input id="login-email-input" type="email" placeholder="email@kamu.com"
+            class="w-full px-3 py-2.5 rounded-xl bg-warm-900/60 border border-warm-600/50 text-sm
+                   text-parchment-100 focus:border-gold-500/50 focus:outline-none placeholder:text-parchment-600" />
+          <button id="login-email-btn" type="button"
+            class="w-full px-4 py-2.5 rounded-xl text-sm font-semibold bg-warm-700 border border-warm-600
+                   text-parchment-100 hover:bg-warm-600 transition-all disabled:opacity-50">
+            Kirim Magic Link
+          </button>
+          <p id="login-email-status" class="hidden text-xs text-center text-parchment-400"></p>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-parchment-500 text-center leading-relaxed">
+        Data kamu aman. SIDIX tidak menjual data ke pihak ketiga.<br>
+        Login = kamu setuju bantu kami dengan feedback ringan.
+      </p>
+
+      <button id="login-skip-btn" type="button"
+        class="w-full text-[11px] text-parchment-600 hover:text-parchment-400 transition-colors py-1">
+        Lewati dulu — coba 1x lagi (terbatas)
+      </button>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Wire up buttons
+  document.getElementById('login-google-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('login-google-btn') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Mengarahkan ke Google…';
+    await signInWithGoogle();
+    // akan redirect, tidak perlu handle result di sini
+  });
+
+  document.getElementById('login-email-btn')?.addEventListener('click', async () => {
+    const email = (document.getElementById('login-email-input') as HTMLInputElement)?.value.trim();
+    const status = document.getElementById('login-email-status');
+    const btn = document.getElementById('login-email-btn') as HTMLButtonElement;
+    if (!email || !email.includes('@')) {
+      (document.getElementById('login-email-input') as HTMLInputElement)?.focus();
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Mengirim…';
+    const { ok, error } = await signInWithEmail(email);
+    if (status) {
+      status.classList.remove('hidden');
+      if (ok) {
+        status.textContent = '✓ Cek inbox kamu! Klik link di email untuk lanjut.';
+        status.className = 'text-xs text-center text-status-ready';
+      } else {
+        status.textContent = `Gagal: ${error}`;
+        status.className = 'text-xs text-center text-status-failed';
+        btn.disabled = false;
+        btn.textContent = 'Kirim Magic Link';
+      }
+    }
+  });
+
+  document.getElementById('login-skip-btn')?.addEventListener('click', () => {
+    closeLoginModal();
+    // Reset count ke FREE_CHAT_LIMIT saja — masih bisa 1 lagi sebelum modal ulang
+    localStorage.setItem(CHAT_COUNT_KEY, '0');
+  });
+}
+
+function openLoginModal(): void {
+  injectLoginModal();
+  const modal = document.getElementById('login-modal');
+  if (modal) modal.classList.remove('hidden');
+  // Disable send button while modal open
+  if (sendBtn) sendBtn.disabled = true;
+}
+
+function closeLoginModal(): void {
+  const modal = document.getElementById('login-modal');
+  if (modal) modal.classList.add('hidden');
+  if (sendBtn) sendBtn.disabled = false;
+}
+
+// ── Onboarding Interview (auto-chat dari SIDIX setelah login) ─────────────────
+async function startOnboardingIfNeeded(): Promise<void> {
+  if (!isLoggedIn() || isOnboarded()) return;
+
+  onboardingStep = 0;
+  onboardingAnswers = { user_id: currentAuthUser!.id };
+
+  // Tunda 800ms biar UI settle
+  await new Promise(r => setTimeout(r, 800));
+  sendOnboardingMessage(ONBOARDING_QUESTIONS[0]);
+  onboardingStep = 1;
+}
+
+function sendOnboardingMessage(text: string): void {
+  appendMessage('ai', text);
+}
+
+async function handleOnboardingReply(userText: string): Promise<boolean> {
+  if (!isLoggedIn() || isOnboarded()) return false;
+  if (onboardingStep === 0 || onboardingStep >= ONBOARDING_QUESTIONS.length) return false;
+
+  // Simpan jawaban sesuai step
+  switch (onboardingStep) {
+    case 1: onboardingAnswers.ai_features_wanted = userText; break;
+    case 2: onboardingAnswers.ai_agents_used = userText; break;
+    case 3: onboardingAnswers.ai_liked = userText; break;
+    case 4: onboardingAnswers.ai_frustrations = userText; break;
+    case 5: onboardingAnswers.one_feature_request = userText; break;
+    case 6:
+      // Parse role dari angka
+      const roleMap: Record<string, UserRole> = { '1': 'user', '2': 'developer', '3': 'researcher' };
+      const roleKey = userText.trim().charAt(0);
+      onboardingAnswers.role = roleMap[roleKey] || 'user';
+      onboardingAnswers.contribute_interest = userText;
+      break;
+  }
+
+  onboardingStep++;
+
+  if (onboardingStep < ONBOARDING_QUESTIONS.length) {
+    // Pertanyaan berikutnya
+    setTimeout(() => sendOnboardingMessage(ONBOARDING_QUESTIONS[onboardingStep - 1 >= 6 ? 6 : onboardingStep - 1 + 1 <= 6 ? onboardingStep : 6]), 600);
+    // Fix: tampilkan pertanyaan berikutnya
+    const nextIdx = onboardingStep - 1;
+    setTimeout(() => sendOnboardingMessage(ONBOARDING_QUESTIONS[nextIdx < ONBOARDING_QUESTIONS.length ? nextIdx : ONBOARDING_QUESTIONS.length - 1]), 600);
+    return true;
+  }
+
+  // Selesai — simpan ke Supabase
+  try {
+    await saveOnboarding(onboardingAnswers as OnboardingAnswers);
+    await trackBetaTester(currentAuthUser!.id);
+    if (onboardingAnswers.role === 'developer' || onboardingAnswers.role === 'researcher') {
+      // Tunjukkan info kontribusi
+      setTimeout(() => {
+        appendMessage('ai',
+          `🛠 Karena kamu memilih sebagai **${onboardingAnswers.role}**, SIDIX senang sekali!\n\n` +
+          `**Cara berkontribusi:**\n` +
+          `• GitHub: github.com/fahmiwol/sidix\n` +
+          `• Baca AGENTS.md untuk panduan arsitektur\n` +
+          `• Buka Issue atau PR — semua kontribusi diterima!\n` +
+          `• Hubungi Fahmi: @fahmiwol di Threads\n\n` +
+          `Terima kasih sudah bergabung! 🙏`
+        );
+      }, 800);
+    }
+  } catch (_e) {
+    // silently fail — jangan ganggu UX
+  }
+
+  markOnboarded();
+  // Tampilkan pesan terima kasih
+  setTimeout(() => sendOnboardingMessage(ONBOARDING_QUESTIONS[ONBOARDING_QUESTIONS.length - 1]), 600);
+  return true;
+}
+
+// ── Auth state listener ───────────────────────────────────────────────────────
+onAuthChange(async (user) => {
+  currentAuthUser = user;
+
+  if (user) {
+    // User baru login
+    closeLoginModal();
+
+    // Upsert profil
+    await upsertUserProfile({
+      id: user.id,
+      email: user.email ?? '',
+      full_name: user.user_metadata?.full_name ?? user.email ?? 'User',
+      avatar_url: user.user_metadata?.avatar_url,
+      role: 'user',
+      onboarding_done: isOnboarded(),
+      created_at: new Date().toISOString(),
+    });
+
+    // Start onboarding jika belum
+    await startOnboardingIfNeeded();
+  }
+});
 
 // ── Elements ─────────────────────────────────────────────────────────────────
 const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -378,6 +652,28 @@ function appendError(message: string) {
 async function handleSend() {
   const question = chatInput.value.trim();
   if (!question) return;
+
+  // ── Onboarding intercept: jawaban interview ────────────────────────────────
+  if (isLoggedIn() && !isOnboarded() && onboardingStep > 0) {
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+    sendBtn.disabled = false;
+    appendMessage('user', question);
+    const handled = await handleOnboardingReply(question);
+    if (handled) return;
+    // Kalau selesai onboarding, lanjut ke chat normal
+  }
+
+  // ── Login gate: cek apakah sudah login ────────────────────────────────────
+  if (!isLoggedIn()) {
+    const count = incrementChatCount();
+    if (count > FREE_CHAT_LIMIT) {
+      // Tampilkan modal login
+      openLoginModal();
+      return;
+    }
+    // count ≤ FREE_CHAT_LIMIT: chat gratis, lanjut normal
+  }
 
   chatInput.value = '';
   chatInput.style.height = 'auto';

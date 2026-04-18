@@ -381,8 +381,6 @@ def _compose_final_answer(
         if ollama_available():
             # Build corpus context dari semua observation
             corpus_ctx = "\n\n---\n\n".join(obs_blocks[:3]) if obs_blocks else ""
-            # Determine system context based on persona
-            system_suffix = f"\nPersona aktif: {persona}" if persona else ""
             text, mode = ollama_generate(
                 prompt=question,
                 corpus_context=corpus_ctx,
@@ -396,7 +394,27 @@ def _compose_final_answer(
     except Exception as _ollama_err:
         import logging as _log
         _log.getLogger("sidix.react").warning(f"Ollama synthesis failed: {_ollama_err}")
-    # ── End Ollama block ─────────────────────────────────────────────────────
+
+    # ── Coba Anthropic Haiku (fallback cloud, hemat) ──────────────────────────
+    try:
+        from .anthropic_llm import anthropic_available, anthropic_generate
+        if anthropic_available():
+            corpus_ctx_snippets = obs_blocks[:3] if obs_blocks else None
+            max_tok = 500 if not simple_mode else 200
+            text, mode = anthropic_generate(
+                prompt=question,
+                max_tokens=max_tok,
+                temperature=0.7,
+                context_snippets=corpus_ctx_snippets,
+            )
+            if mode == "anthropic_haiku" and text:
+                import logging as _log
+                _log.getLogger("sidix.react").info("Anthropic Haiku synthesis OK")
+                return (text, all_citations, 0.82, "fakta")
+    except Exception as _anth_err:
+        import logging as _log
+        _log.getLogger("sidix.react").warning(f"Anthropic synthesis failed: {_anth_err}")
+    # ── End cloud fallback ────────────────────────────────────────────────────
 
     # Greeting special case (fallback kalau Ollama off)
     if _GREETING_RE.match(question.strip()):
@@ -411,7 +429,21 @@ def _compose_final_answer(
         )
 
     if not obs_blocks:
-        # Kalau Ollama off dan tidak ada corpus → tanya tanpa konteks via Ollama
+        # Kalau Ollama off dan tidak ada corpus → coba Anthropic Haiku
+        try:
+            from .anthropic_llm import anthropic_available, anthropic_generate
+            if anthropic_available():
+                text, mode = anthropic_generate(
+                    prompt=question,
+                    max_tokens=500,
+                    temperature=0.7,
+                )
+                if mode == "anthropic_haiku" and text:
+                    return (text, [], 0.75, "fakta")
+        except Exception:
+            pass
+
+        # Fallback: coba Ollama juga
         try:
             from .ollama_llm import ollama_available, ollama_generate
             if ollama_available():

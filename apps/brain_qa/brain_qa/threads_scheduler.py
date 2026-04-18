@@ -252,6 +252,111 @@ def run_mention_monitor(auto_reply: bool = False, dry_run: bool = True) -> dict:
     }
 
 
+def run_series_post(post_type: str, force: bool = False, dry_run: bool = False) -> dict:
+    """
+    Post salah satu bagian dari seri 3-post harian SIDIX.
+
+    post_type: 'hook' | 'detail' | 'cta'
+    force: posting meskipun sudah dipost hari ini
+    dry_run: preview tanpa kirim
+
+    Jadwal optimal (WIB):
+      hook   → 08:00 (UTC 01:00)
+      detail → 12:00 (UTC 05:00)
+      cta    → 18:00 (UTC 11:00)
+    """
+    from .threads_oauth import create_text_post, get_token
+    from .threads_series import get_today_series, mark_post_sent
+
+    if post_type not in ("hook", "detail", "cta"):
+        return {"ok": False, "error": f"post_type harus 'hook', 'detail', atau 'cta'. Got: {post_type}"}
+
+    if not get_token():
+        return {"ok": False, "reason": "Threads belum terhubung. Setup via /threads/auth"}
+
+    series_data = get_today_series()
+    post_text = series_data.get(post_type, "")
+
+    if not post_text:
+        return {"ok": False, "error": f"Teks '{post_type}' kosong untuk hari ini"}
+
+    # Cek apakah sudah dipost hari ini
+    already = series_data.get(f"{post_type}_posted", False)
+    if already and not force:
+        return {
+            "ok": True,
+            "skipped": True,
+            "reason": f"'{post_type}' sudah dipost hari ini",
+            "post_id": series_data.get(f"{post_type}_post_id"),
+        }
+
+    if dry_run:
+        return {
+            "ok": True,
+            "dry_run": True,
+            "post_type": post_type,
+            "angle": series_data.get("angle"),
+            "language": series_data.get("language"),
+            "topic": series_data.get("topic"),
+            "text_preview": post_text,
+            "char_count": len(post_text),
+        }
+
+    try:
+        result = create_text_post(post_text)
+        if result.get("ok"):
+            post_id = result.get("post_id", "")
+            mark_post_sent(post_type, post_id)
+            # Update scheduler state global juga
+            state = _load_state()
+            state["last_post_date"] = _today_str()
+            state[f"last_{post_type}_post_id"] = post_id
+            state["post_count"] = state.get("post_count", 0) + 1
+            _save_state(state)
+            return {
+                "ok": True,
+                "posted": True,
+                "post_type": post_type,
+                "angle": series_data.get("angle"),
+                "language": series_data.get("language"),
+                "topic": series_data.get("topic"),
+                "post_id": post_id,
+                "permalink": result.get("permalink"),
+                "char_count": len(post_text),
+            }
+        else:
+            return {"ok": False, "error": result.get("error", "Unknown error"), "post_type": post_type}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "post_type": post_type}
+
+
+def preview_today_series(day: int | None = None) -> dict:
+    """Preview semua 3 post series hari ini tanpa mengirim."""
+    from .threads_series import get_today_series, generate_series
+    series = get_today_series() if day is None else generate_series(day)
+    return {
+        "ok": True,
+        "angle": series.get("angle"),
+        "language": series.get("language"),
+        "topic": series.get("topic"),
+        "hook": {
+            "text": series.get("hook", ""),
+            "char_count": len(series.get("hook", "")),
+            "posted": series.get("hook_posted", False),
+        },
+        "detail": {
+            "text": series.get("detail", ""),
+            "char_count": len(series.get("detail", "")),
+            "posted": series.get("detail_posted", False),
+        },
+        "cta": {
+            "text": series.get("cta", ""),
+            "char_count": len(series.get("cta", "")),
+            "posted": series.get("cta_posted", False),
+        },
+    }
+
+
 def run_daily_cycle(dry_run: bool = False) -> dict:
     """
     Siklus lengkap harian SIDIX Threads Agent:
