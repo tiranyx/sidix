@@ -1502,6 +1502,98 @@ def create_app() -> "FastAPI":
         import logging
         logging.getLogger(__name__).warning("admin_threads router gagal dimuat: %s", _e)
 
+    # ── Threads OAuth 2.0 (Meta Graph API) ───────────────────────────────────
+    @app.get("/threads/auth", tags=["Threads"])
+    def threads_auth_url(state: str = "sidix_oauth"):
+        """Generate OAuth URL untuk menghubungkan akun Threads ke SIDIX."""
+        try:
+            from .threads_oauth import build_auth_url, APP_ID
+            if not APP_ID:
+                raise HTTPException(status_code=503, detail="THREADS_APP_ID belum dikonfigurasi")
+            return {"ok": True, "auth_url": build_auth_url(state=state)}
+        except HTTPException:
+            raise
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/threads/callback", tags=["Threads"])
+    def threads_callback(code: str = "", error: str = "", error_description: str = ""):
+        """OAuth callback dari Meta. Tukar code → access token."""
+        if error:
+            from fastapi.responses import HTMLResponse
+            html = f"""<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
+<title>SIDIX — Error OAuth</title></head><body style="font-family:sans-serif;background:#0f0f0f;color:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh">
+<div style="text-align:center"><h1>❌ OAuth Gagal</h1><p>{error}: {error_description}</p>
+<a href="https://app.sidixlab.com" style="color:#0af">Kembali ke SIDIX</a></div></body></html>"""
+            return HTMLResponse(content=html, status_code=400)
+        if not code:
+            raise HTTPException(status_code=400, detail="Parameter 'code' tidak ada")
+        try:
+            from .threads_oauth import exchange_code
+            from fastapi.responses import HTMLResponse
+            token_data = exchange_code(code)
+            username = token_data.get("username", "unknown")
+            days = int(token_data.get("expires_in", 60 * 86400) / 86400)
+            html = f"""<!DOCTYPE html>
+<html lang="id"><head><meta charset="UTF-8"><title>SIDIX — Threads Terhubung</title>
+<style>body{{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#0f0f0f;color:#fff}}
+.card{{background:#1a1a1a;border-radius:16px;padding:40px;text-align:center;max-width:400px}}
+h1{{color:#0af}}p{{color:#aaa}}a{{color:#0af}}</style></head>
+<body><div class="card"><h1>✅ Threads Terhubung!</h1>
+<p>Akun <strong>@{username}</strong> berhasil terhubung ke SIDIX.</p>
+<p>Token berlaku <strong>{days} hari</strong>.</p>
+<p><a href="https://app.sidixlab.com">Kembali ke app.sidixlab.com</a></p>
+</div></body></html>"""
+            return HTMLResponse(content=html)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"OAuth error: {exc}") from exc
+
+    @app.get("/threads/status", tags=["Threads"])
+    def threads_status():
+        """Cek status koneksi Threads."""
+        try:
+            from .threads_oauth import get_token_info
+            return {"ok": True, "threads": get_token_info()}
+        except Exception as e:
+            return {"ok": True, "threads": {"connected": False, "error": str(e)}}
+
+    @app.post("/threads/post", tags=["Threads"])
+    def threads_post(body: dict[str, Any] = {}):
+        """
+        Post ke Threads. Butuh token sudah tersimpan via /threads/callback.
+        Body: {text: str} atau {template_topic: str, template_idx: 0}
+        """
+        try:
+            from .threads_oauth import create_text_post, generate_sidix_post, get_token
+            if not get_token():
+                raise HTTPException(status_code=401, detail="Threads belum terhubung. Buka /threads/auth dulu.")
+            template_topic = (body or {}).get("template_topic", "")
+            template_idx = int((body or {}).get("template_idx", 0))
+            text = (body or {}).get("text", "").strip()
+            if template_topic:
+                text = generate_sidix_post(template_topic, template_idx)
+            if not text:
+                raise HTTPException(status_code=400, detail="Isi 'text' atau 'template_topic'")
+            result = create_text_post(text)
+            return {"ok": True, "result": result, "text_posted": text}
+        except HTTPException:
+            raise
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/threads/recent", tags=["Threads"])
+    def threads_recent(limit: int = 5):
+        """Ambil posts terbaru dari akun Threads."""
+        try:
+            from .threads_oauth import get_recent_posts, get_token
+            if not get_token():
+                raise HTTPException(status_code=401, detail="Threads belum terhubung.")
+            return {"ok": True, "posts": get_recent_posts(limit=limit)}
+        except HTTPException:
+            raise
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     # ── /sidix-folder/* ─ konversi D:\\SIDIX → kapabilitas SIDIX ──────────────
     @app.post("/sidix-folder/process")
     def sidix_folder_process():
