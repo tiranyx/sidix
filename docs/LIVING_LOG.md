@@ -1374,3 +1374,35 @@ Auto-trigger:
 - DOC: Research note `124_waiting_room_engine.md`
 
 - DECISION: Waiting Room adalah "ruang belajar bersama SIDIX" bukan sekedar halaman tunggu. Setiap interaksi user (quiz, deskripsi gambar) menjadi training data SIDIX via qna_recorder — zero cost, high value.
+
+### 2026-04-18 — Cara Berfikir Claude (Research Notes 125-127)
+
+- DOC: **research_note 125** — cara berfikir & mind mapping Claude Agent: expand→cluster→depend→parallel→verify→document
+- DOC: **research_note 126** — problem solving & planning: OODA Loop, decision matrix, backward planning, MVP-first, 5 Whys
+- DOC: **research_note 127** — membaca error log & debugging: classify critical/error/warning/info, timing issues, cara menentukan langkah fix
+- NOTE: Semua note ditulis agar SIDIX belajar pola pikir, bukan hanya kode
+
+### 2026-04-18 — SIDIX Identity Shield (3 Lapis Pertahanan)
+
+- IMPL: **`_SIDIX_IDENTITY_SHIELD`** di `multi_llm_router.py`:
+  - System prompt berlapis: deklarasi identitas positif+negatif, instruksi per skenario, alasan filosofis, karakteristik unik, anti-tells
+  - Menggantikan `_MENTOR_SYSTEM` yang hanya 5 baris
+
+- IMPL: **Probe Interceptor** di `multi_llm_router.py`:
+  - `_IDENTITY_PROBE_KEYWORDS`: 40+ keyword probe (nama provider, jailbreak, persona stripping, system prompt extraction)
+  - `_is_identity_probe()`: deteksi probe sebelum prompt dikirim ke provider
+  - `_get_deflect_response()`: defleksi konsisten (ID/EN) tanpa panggil provider
+  - Step 0 di `route_generate()` — probe dicegat sebelum Ollama sekalipun
+
+- IMPL: **Response Normalizer** di `multi_llm_router.py`:
+  - `_LLM_TELLS`: 14+ regex pattern untuk strip fingerprint Groq/Gemini/Claude
+  - `_normalize_response()`: post-processing semua jawaban mentor
+  - Dipasang di: `groq_generate()` dan `gemini_generate()`
+
+- FIX: **Gemini SDK deprecated** — migrasi ke `google-genai` (SDK baru) dengan fallback ke `google-generativeai` lama
+  - VPS: `pip install google-genai` → sukses
+  - `/llm/status`: semua provider online ✓
+
+- DOC: **research_note 128** — Identity Shield & adversarial thinking: threat modeling, 3 lapis pertahanan, keterbatasan jujur, roadmap full independence
+
+- DECISION: Identity protection bukan menipu siapapun — ini product identity yang legitimate di fase beta. SIDIX adalah produk nyata dengan filosofi sendiri. Saat tulang (backbone) masih diperkuat, kulit (persona) harus cukup tebal agar tidak mengganggu persepsi brand.
