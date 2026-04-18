@@ -1604,3 +1604,70 @@ Asumsi kualitas stabil, domain coverage naik dari 52 -> 52 (topik per domain mak
 - Integrasi generative design (Canva MCP atau image generation Gemini)
 - Auto-LoRA: kalau training pairs > 500 -> trigger kaggle upload
 - Weekly reflection: mingguan SIDIX review apa yang dipelajari, apa yang masih lemah
+
+## 2026-04-18 — Sprint Sanad + Hafidz Integration (Iterasi Lanjutan)
+
+### Target
+Integrasi daily_growth -> hafidz_mvp -> sanad metadata, agar tiap note yang dihasilkan SIDIX otomatis terdaftar di ledger terverifikasi dan bisa direplikasi ke node lain. Baca ulang note 106 & 115 untuk paham API persisnya.
+
+### Baca ulang
+- 106_hafidz_mvp_implementation.md — API lengkap: HafidzNode.store(), verify_integrity(), get_stats()
+- 115_p2p_smart_ledger_hafidz.md — analogi Islamic (mutawatir=erasure, sanad=merkle, ijazah=CAS)
+- 22_distributed_rag_hafidz_inspired_architecture.md — arsitektur 4-layer (CAS/Merkle/Erasure/Index)
+- 41_islamic_epistemology_sidix_architecture.md — sanad sebagai anti-halusinasi
+
+### Implementasi
+[IMPL] sanad_builder.py (251 lines) — SanadEntry, SanadMetadata, build_from_bundle(),
+       register_note_with_sanad(), to_markdown_section(), persist/load sanad
+[IMPL] note_drafter.approve_draft() diperluas: bundle_snapshot disimpan saat draft,
+       saat approve direkonstruksi -> sanad dibangun -> Hafidz register -> CAS/merkle
+       di-embed ke MD + sanad JSON tersimpan terpisah
+[IMPL] 4 endpoint Hafidz baru: /hafidz/stats, /hafidz/verify, /hafidz/sanad/{stem},
+       /hafidz/retrieve/{cas_hash}
+
+### Deploy & Test
+[DEPLOY] commit 5ba0876 pushed -> git pull di server -> pm2 restart sidix-brain
+[TEST] /sidix/grow 1 topik -> note 140 published WITH sanad+hafidz:
+  - CAS hash: f6625b91... (Sha-256)
+  - Merkle root: 808f739b...
+  - 5 erasure shares di .data/hafidz/shares/
+  - Sanad JSON 1843 bytes (4 isnad entries: SIDIX narrator -> Groq Llama3 -> 2 Wikipedia)
+  - Tabayyun: findings=9, narrative=1798 char, quality_gate=passed
+[VERIFY] /hafidz/verify -> ok=1, failed=[], integrity OK
+
+### Dokumentasi
+[DOC] research_note 141_integrasi_sanad_hafidz_setiap_note.md — filosofi, struktur,
+      endpoint, roadmap P2P, mapping Islamic <-> teknis lengkap, keterbatasan jujur
+
+### Bug ditemukan (bukan blocking)
+- Wikipedia ID kadang balikin artikel tidak relevan masuk sanad (BM25 match kata lepas).
+  Filter relevansi existing di web_research.py sudah ada tapi belum cukup ketat.
+- Confidence simpul masih heuristik (flat per type). Belum weighted per content quality.
+
+### Planning sprint berikutnya (request user)
+Sprint 15 menit: SIDIX multi-modal
+- [ ] Generate gambar (level GPT/Midjourney)
+- [ ] Kenali gambar (vision model)
+- [ ] OCR (teks dari gambar)
+- [ ] Kenali suara (ASR)
+- [ ] Bunyi/audio general
+- [ ] TTS (bicara)
+
+Strategi: pakai API gratis/murah (Gemini Vision multimodal, Groq Whisper, 
+Stability AI/Flux untuk image gen), siapkan modul abstraksi mirip multi_llm_router
+agar bisa swap provider.
+
+Endpoints yang akan ditambah:
+- POST /sidix/image/generate (text -> image)
+- POST /sidix/image/analyze (image -> caption + OCR)
+- POST /sidix/audio/listen (audio -> transcript)
+- POST /sidix/audio/speak (text -> audio)
+
+Integrasi ke research pipeline: kalau riset butuh diagram, auto-generate + embed;
+kalau sumber berupa audio/video, auto-transcript.
+
+### Commit log
+- c08fcb7: Fase 4 daily_growth
+- 6bee103: note 139 daily_growth
+- 5ba0876: Sanad+Hafidz integration
+- (next) note 141 + this log entry
