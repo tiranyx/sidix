@@ -782,6 +782,19 @@ def create_app() -> "FastAPI":
             except Exception:
                 pass
 
+            # ── 4b. Deteksi knowledge gap (Fase 2 self-learning) ──────────────
+            try:
+                from .knowledge_gap_detector import detect_and_record_gap
+                detect_and_record_gap(
+                    question   = req.question,
+                    answer     = answer,
+                    confidence = float(session.confidence or 0.0),
+                    mode       = getattr(session, "model_mode", "unknown"),
+                    session_id = session.session_id,
+                )
+            except Exception:
+                pass
+
             # ── 5. Kirim meta + quota info ─────────────────────────────────────
             meta = _json.dumps({
                 "type": "meta",
@@ -2290,6 +2303,48 @@ h1{{color:#0af}}p{{color:#aaa}}a{{color:#0af}}</style></head>
         try:
             from .waiting_room import get_waiting_room_stats
             return {"ok": True, "stats": get_waiting_room_stats("global")}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── /gaps/* ─ Knowledge Gap Detector (Fase 2 self-learning) ──────────────
+
+    @app.get("/gaps", tags=["SelfLearning"])
+    def gaps_list(domain: str = "", min_freq: int = 1, limit: int = 50):
+        """
+        List knowledge gaps SIDIX — topik yang sering tidak bisa dijawab.
+        Sorted by frequency (paling sering = paling penting untuk dipelajari).
+        """
+        try:
+            from .knowledge_gap_detector import get_gaps
+            results = get_gaps(
+                domain        = domain or None,
+                min_frequency = min_freq,
+                resolved      = False,
+                limit         = limit,
+            )
+            return {"ok": True, "count": len(results), "gaps": results}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/gaps/domains", tags=["SelfLearning"])
+    def gaps_by_domain():
+        """Distribusi knowledge gaps per domain — untuk prioritas belajar."""
+        try:
+            from .knowledge_gap_detector import get_gap_domains, get_stats
+            return {"ok": True, "domains": get_gap_domains(), "stats": get_stats()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/gaps/{topic_hash}/resolve", tags=["SelfLearning"])
+    def gaps_resolve(topic_hash: str, note: str = ""):
+        """
+        Tandai gap sebagai resolved — dipanggil setelah research note baru dibuat.
+        Admin only.
+        """
+        try:
+            from .knowledge_gap_detector import resolve_gap
+            ok = resolve_gap(topic_hash, note)
+            return {"ok": ok, "topic_hash": topic_hash}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
