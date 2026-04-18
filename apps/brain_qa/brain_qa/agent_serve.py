@@ -2348,6 +2348,211 @@ h1{{color:#0af}}p{{color:#aaa}}a{{color:#0af}}</style></head>
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    # ── /research/* & /drafts/* ─ Autonomous Researcher (Fase 3 self-learning)
+
+    @app.post("/research/direct", tags=["SelfLearning"])
+    def research_direct(
+        question: str,
+        domain: str = "umum",
+        extra_urls: str = "",
+        multi_perspective: bool = True,
+    ):
+        """
+        Riset langsung dari pertanyaan — tanpa perlu gap terdeteksi dulu.
+        Berguna untuk test pipeline atau riset on-demand oleh mentor.
+
+        Body params:
+          question: pertanyaan utama yang ingin diriset
+          domain:   domain knowledge (ai, epistemologi, python, dll.)
+          extra_urls: URL tambahan dipisah koma (opsional)
+          multi_perspective: aktifkan 5 lensa POV (default: true)
+        """
+        try:
+            from .autonomous_researcher import (
+                ResearchBundle,
+                _generate_search_angles,
+                _synthesize_from_llm,
+                _synthesize_multi_perspective,
+                _enrich_from_urls,
+                _narrate_synthesis,
+                _remember_learnings,
+                _auto_discover_sources,
+            )
+            from .note_drafter import draft_from_bundle
+            import time as _time
+
+            urls = [u.strip() for u in extra_urls.split(",") if u.strip()] if extra_urls else []
+
+            # Auto-discover sumber
+            discovered_urls, search_meta = _auto_discover_sources(question, max_urls=4)
+            all_urls = list(dict.fromkeys(urls + discovered_urls))  # dedupe
+
+            angles   = _generate_search_angles(question, domain)
+            findings = _synthesize_from_llm(angles)
+            if multi_perspective:
+                findings += _synthesize_multi_perspective(question)
+            findings += _enrich_from_urls(all_urls, main_question=question)
+
+            narrative = _narrate_synthesis(question, findings, all_urls) or ""
+
+            topic_hash = f"direct_{int(_time.time())}"
+            bundle = ResearchBundle(
+                topic_hash      = topic_hash,
+                domain          = domain,
+                main_question   = question,
+                angles          = angles,
+                findings        = findings,
+                urls_used       = all_urls,
+                search_metadata = search_meta,
+                narrative       = narrative,
+            )
+
+            _remember_learnings(bundle)
+            rec = draft_from_bundle(bundle)
+            if not rec:
+                return {"ok": False, "error": "draft generation failed"}
+
+            return {
+                "ok":       True,
+                "draft_id": rec.draft_id,
+                "title":    rec.title,
+                "domain":   rec.domain,
+                "findings": len(findings),
+                "preview":  rec.markdown[:600],
+            }
+        except Exception as e:
+            import traceback
+            return {"ok": False, "error": str(e), "trace": traceback.format_exc()[-600:]}
+
+    @app.post("/research/start", tags=["SelfLearning"])
+    def research_start(
+        topic_hash: str,
+        extra_urls: str = "",           # comma-separated
+        multi_perspective: bool = True,
+    ):
+        """
+        Kick off riset otomatis untuk satu knowledge gap.
+        SIDIX akan:
+          1. Urai topik jadi 4 sub-pertanyaan
+          2. Jawab tiap sub dari mentor LLM
+          3. (default) Tambahkan 5 perspektif berbeda: kritis, kreatif,
+             sistematis, visioner, realistis
+          4. (opsional) Enrich dari URL user
+          5. Render sebagai draft research note pending approval
+        """
+        try:
+            from .note_drafter import research_and_draft
+            urls = [u.strip() for u in extra_urls.split(",") if u.strip()] if extra_urls else None
+            rec = research_and_draft(topic_hash, extra_urls=urls)
+            if not rec:
+                return {"ok": False, "error": "research failed (topic_hash unknown or empty findings)"}
+            return {
+                "ok":       True,
+                "draft_id": rec.draft_id,
+                "title":    rec.title,
+                "domain":   rec.domain,
+                "preview":  rec.markdown[:500],
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/drafts", tags=["SelfLearning"])
+    def drafts_list(status: str = "pending"):
+        """List draft research notes — status: pending/approved/rejected/all."""
+        try:
+            from .note_drafter import list_drafts
+            items = list_drafts(status=status)
+            return {"ok": True, "count": len(items), "drafts": items}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/drafts/{draft_id}", tags=["SelfLearning"])
+    def drafts_get(draft_id: str):
+        """Ambil konten draft lengkap (markdown)."""
+        try:
+            from .note_drafter import get_draft
+            data = get_draft(draft_id)
+            if not data:
+                return {"ok": False, "error": "not found"}
+            return {"ok": True, "draft": data}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/drafts/{draft_id}/approve", tags=["SelfLearning"])
+    def drafts_approve(draft_id: str):
+        """Approve draft → publish ke brain/public/research_notes/ + resolve gap."""
+        try:
+            from .note_drafter import approve_draft
+            return approve_draft(draft_id)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/drafts/{draft_id}/reject", tags=["SelfLearning"])
+    def drafts_reject(draft_id: str, reason: str = ""):
+        """Reject draft — tetap tersimpan untuk audit trail."""
+        try:
+            from .note_drafter import reject_draft
+            return reject_draft(draft_id, reason=reason)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/research/auto-run", tags=["SelfLearning"])
+    def research_auto_run(top_n: int = 3, min_frequency: int = 2):
+        """
+        Nightly / on-demand: ambil top-N gap paling sering, jalankan riset untuk
+        masing-masing. Semua output masuk ke /drafts?status=pending untuk review.
+        """
+        try:
+            from .knowledge_gap_detector import get_gaps
+            from .note_drafter import research_and_draft
+
+            candidates = get_gaps(min_frequency=min_frequency, limit=top_n)
+            if not candidates:
+                return {"ok": True, "started": 0, "message": "no gaps with min frequency"}
+
+            results = []
+            for g in candidates:
+                th = g.get("topic_hash")
+                if not th:
+                    continue
+                try:
+                    rec = research_and_draft(th)
+                    if rec:
+                        results.append({
+                            "topic_hash": th,
+                            "draft_id":   rec.draft_id,
+                            "title":     rec.title,
+                        })
+                except Exception as e:
+                    results.append({"topic_hash": th, "error": str(e)})
+            return {"ok": True, "started": len(results), "results": results}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/research/search", tags=["SelfLearning"])
+    def research_search(q: str, max_results: int = 8):
+        """Preview hasil pencarian eksternal (Wikipedia + DDG) untuk satu query."""
+        try:
+            from .web_research import search_multi
+            hits = search_multi(q, max_total=max_results)
+            return {"ok": True, "count": len(hits), "results": [h.to_dict() for h in hits]}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/memory/recall", tags=["SelfLearning"])
+    def memory_recall(topic_hash: str = "", domain: str = "", limit: int = 20):
+        """
+        Panggil memori SIDIX — yang sudah dipelajari sebelumnya tentang topik ini.
+        Setiap riset menyimpan insights-nya ke .data/sidix_memory/<domain>.jsonl;
+        endpoint ini membacanya kembali agar jawaban konsisten lintas waktu.
+        """
+        try:
+            from .autonomous_researcher import recall_memory
+            items = recall_memory(topic_hash=topic_hash, domain=domain, limit=limit)
+            return {"ok": True, "count": len(items), "memories": items}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     # ── /sidix-folder/* ─ konversi D:\\SIDIX → kapabilitas SIDIX ──────────────
     @app.post("/sidix-folder/process")
     def sidix_folder_process():

@@ -1406,3 +1406,80 @@ Auto-trigger:
 - DOC: **research_note 128** — Identity Shield & adversarial thinking: threat modeling, 3 lapis pertahanan, keterbatasan jujur, roadmap full independence
 
 - DECISION: Identity protection bukan menipu siapapun — ini product identity yang legitimate di fase beta. SIDIX adalah produk nyata dengan filosofi sendiri. Saat tulang (backbone) masih diperkuat, kulit (persona) harus cukup tebal agar tidak mengganggu persepsi brand.
+
+---
+
+## 2026-04-18 — Fase 3 Self-Learning: Autonomous Researcher + Multi-Perspective
+
+- IMPL: **autonomous_researcher.py** (`apps/brain_qa/brain_qa/`)
+  - `research_gap(topic_hash)` pipeline end-to-end
+  - `_generate_search_angles()` — LLM pecah topik jadi 4 sub-pertanyaan (apa/kenapa/bagaimana/contoh)
+  - `_synthesize_from_llm()` — jawaban mentor default per angle
+  - `_synthesize_multi_perspective()` — 5 lensa: kritis, kreatif, sistematis, visioner, realistis
+  - `_enrich_from_urls()` — webfetch opsional kalau mentor kasih URL
+  - Output `ResearchBundle` di-persist ke `.data/research_bundles/`
+
+- IMPL: **note_drafter.py** (`apps/brain_qa/brain_qa/`)
+  - `draft_from_bundle()` render markdown note format standar
+  - `list_drafts()` / `get_draft()` / `approve_draft()` / `reject_draft()`
+  - Approve → tulis ke `brain/public/research_notes/NNN_slug.md` + auto-resolve gap
+  - `research_and_draft()` convenience end-to-end
+
+- IMPL: **Endpoints Fase 3** di `agent_serve.py` (tag SelfLearning):
+  - POST `/research/start` — trigger riset untuk topic_hash
+  - GET  `/drafts?status=` — list pending/approved/rejected
+  - GET  `/drafts/{id}` — markdown lengkap untuk review
+  - POST `/drafts/{id}/approve` — publish + resolve gap
+  - POST `/drafts/{id}/reject` — audit trail
+
+- DECISION: **Multi-perspective engine** adalah fitur inti, bukan optional.
+  SIDIX dirancang seperti "ruang diskusi jutaan kepala manusia" — tidak baku,
+  tidak saklek, tapi tetap relevan. 5 lensa wajib: kritis/kreatif/sistematis/
+  visioner/realistis. Default `multi_perspective=True` di `research_gap()`.
+
+- DOC: **research_note 132** — Multi-Perspective Autonomous Research: prinsip,
+  arsitektur, 5 lensa, API, keterbatasan, relevansi filosofis.
+
+- IMPL: **web_research.py** — pencarian sumber eksternal tanpa API key:
+  - `search_duckduckgo()` — scrape DDG HTML
+  - `search_wikipedia()` — REST API id+en (akademis ringkas)
+  - `search_multi()` — unified dengan dedupe + domain scoring
+  - Bobot domain: .edu/.gov/.ac.id/arxiv/wikipedia tinggi; sosmed diblok
+
+- IMPL: **Integrasi auto-search** ke `autonomous_researcher.research_gap()`:
+  - `auto_search_web=True` default → SIDIX cari sendiri 4 URL akademis
+  - Webfetch URL hasil pencarian → masuk findings
+  - Metadata pencarian tersimpan di `bundle.search_metadata` (transparan)
+  - Draft note menampilkan "Hasil Pencarian Otomatis (ranked)"
+
+- IMPL: **Endpoints Fase 4**:
+  - POST `/research/auto-run?top_n=3` — nightly batch riset top gaps
+  - GET  `/research/search?q=` — preview hasil pencarian eksternal
+
+- DOC: **research_note 133** — Transfer pengalaman AI agent ke SIDIX:
+  10 prinsip operasi (baca-sebelum-bertindak, error-as-data, multi-source,
+  skeptis terhadap output sendiri, dsb), pola mental yang sudah dimiliki,
+  pengakuan jujur yang belum, flywheel self-learning.
+
+- IMPL: **Baca → Paham → Ingat → Ceritakan** pipeline (refinement `autonomous_researcher`):
+  - `_comprehend_source()` — LLM baca raw web content → rephrase dengan gaya SIDIX,
+    sitasi sumber eksplisit, 3-5 poin; bukan dump mentah
+  - `_narrate_synthesis()` — pass terakhir: semua findings → satu cerita
+    mengalir dengan sitasi `(menurut <host>)`, gaya Indonesia tenang
+  - `_remember_learnings()` — bundle disimpan ke `.data/sidix_memory/<domain>.jsonl`,
+    memori persisten untuk recall di query berikutnya
+  - `recall_memory()` — baca kembali memori topik/domain
+  - Field `bundle.narrative` baru; tampil di draft sebagai "SIDIX Bercerita"
+
+- IMPL: Endpoint `/memory/recall?domain=&topic_hash=` untuk akses memori SIDIX
+
+- DOC: **research_note 134** — Baca → Paham → Ingat → Ceritakan: prinsip 4-tahap,
+  implementasi per-tahap, alur lengkap, dua manfaat ganda (user dapat jawaban,
+  SIDIX dapat pembelajaran), keterbatasan jujur.
+
+## 2026-04-18 — Destilasi Rujukan ke Corpus (Iterasi Lanjutan)
+
+[DOC] brain/public/research_notes/135_paul_elder_critical_thinking_framework.md — 8 elements x 9 standards x 8 traits, rencana self-check gate pre-output + lensa ke-6 multi-perspective.
+[DOC] brain/public/research_notes/136_jurnal_fahmi_claude_arsitektur_agent.md — literasi terminologi, 6-layer agent architecture, tahapan training Claude, perbandingan Claude-beku vs SIDIX-tumbuh.
+[DOC] brain/public/research_notes/137_intelligence_sebagai_penguasaan_domain.md — Ian Pierre 4 domain + NeuroNation 6 tips + Gardner MI, formula kecerdasan praktis, pemetaan ke SIDIX.
+[NOTE] 3 rujukan user sudah jadi corpus. Pending: critical_thinking_gate.py module, lensa ke-6 disciplined_thinker di autonomous_researcher.
