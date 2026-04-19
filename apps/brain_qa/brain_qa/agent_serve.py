@@ -3069,6 +3069,49 @@ h1{{color:#0af}}p{{color:#aaa}}a{{color:#0af}}</style></head>
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    # ── LearnAgent endpoints ─────────────────────────────────────────────────
+    @app.get("/learn/status")
+    def learn_agent_status(request: Request):
+        """Status LearnAgent: last run per source. Admin-only."""
+        if not _admin_ok(request):
+            raise HTTPException(status_code=403, detail="admin token diperlukan")
+        try:
+            from .learn_agent import LearnAgent
+            return {"ok": True, "sources": LearnAgent().status()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/learn/run")
+    async def learn_agent_run(request: Request):
+        """Trigger learning cycle. Admin-only. Body: {domain: str, force: bool}"""
+        if not _admin_ok(request):
+            raise HTTPException(status_code=403, detail="admin token diperlukan")
+        body = {}
+        try:
+            body = await request.json()
+        except Exception:
+            pass
+        domain = body.get("domain", "all")
+        force = bool(body.get("force", False))
+        try:
+            from .learn_agent import LearnAgent
+            summary = LearnAgent().run(domain=domain, force=force)
+            return {"ok": True, "summary": summary}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/learn/process_queue")
+    def learn_process_queue(request: Request):
+        """Process corpus queue → trigger re-index. Admin-only."""
+        if not _admin_ok(request):
+            raise HTTPException(status_code=403, detail="admin token diperlukan")
+        try:
+            from .learn_agent import LearnAgent
+            count = LearnAgent().process_corpus_queue()
+            return {"ok": True, "processed": count}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     return app
 
 
