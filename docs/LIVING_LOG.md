@@ -2007,3 +2007,34 @@ git pull saja TIDAK update landing live - perlu copy manual ke wwwroot setelah p
 - sidixlab.com: bersih (no owner identifying)
 - privacy.html: bersih
 - app.sidixlab.com: chat board langsung, 5 chat gratis sebelum login modal
+
+
+## 2026-04-19 - Checkpoint + Adopsi Metodologi Validasi (PRE-Sintesis)
+
+### Yang dikerjakan turn ini
+[DOC] docs/SIDIX_CHECKPOINT_2026-04-19.md - snapshot lengkap progress sesi ini
+  + queue plan + state file pointer + commit pointer
+[DOC] Tambah section 'Metodologi Validasi Catatan SIDIX' di checkpoint
+  - Adopsi dari apps/brain_qa/brain_qa/hadith_validate.py (modul existing)
+  - 5 label validasi (matched/partial/not_found/conflict_suspected/popular_snippet_suspected)
+  - 7 aturan catatan: tanggal, label epistemik, anti-ambiguity, append-only,
+    topic_hash CAS, recurring lookup-first, anti-repeat checklist 3-file
+
+### Mandate user
+'kalau ga mencatat SIDIX kehilangan memori, mengulang. Ada riset cara
+hadits/sunnah/quran divalidasi. Pernah dibuat Cursor. Biar selalu ada
+catatan valid, tidak ambigu.'
+
+### State file SSOT
+- docs/SIDIX_CHECKPOINT_2026-04-19.md (snapshot lengkap)
+- docs/LIVING_LOG.md (audit trail harian)
+- C:\Users\ASUS\.claude\projects\D--MIGHAN-Model\memory\framework_living.md
+- apps/brain_qa/brain_qa/hadith_validate.py (metodologi validasi)
+
+### Queue (in-flight, akan dilanjut next turn)
+1. Tulis SIDIX_BIBLE.md - konstitusi hidup + aturan no-ambiguity
+2. Tulis docs/RULES.md - aturan operasional turunan
+3. Tulis research_note 145 - alignment audit IHOS+sanad+hafidz vs kondisi sekarang
+4. Beri 5-7 keputusan growth-hack untuk akselerasi
+5. Update CLAUDE.md sebagai SSOT pointer
+6. Commit + push semua
