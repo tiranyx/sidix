@@ -835,6 +835,160 @@ def _tool_code_sandbox(args: dict) -> ToolResult:
     )
 
 
+# ── web_search — own wrapper DuckDuckGo HTML (no API, no vendor) ──────────────
+_WEB_SEARCH_MAX_RESULTS = 8
+
+
+def _tool_web_search(args: dict) -> ToolResult:
+    """
+    Search web via DuckDuckGo HTML endpoint — parse hasil own stack.
+    Standing-alone: tidak pakai Google/Bing/SerpAPI. Hanya fetch HTML publik dari
+    html.duckduckgo.com dan extract result (judul, snippet, URL) dengan BeautifulSoup.
+    Params: query (str, wajib), max_results (int, default 8, max 15).
+    """
+    query = str(args.get("query", "")).strip()
+    if not query:
+        return ToolResult(success=False, output="", error="query wajib diisi")
+    max_results = int(args.get("max_results", _WEB_SEARCH_MAX_RESULTS))
+    max_results = max(1, min(max_results, 15))
+
+    try:
+        import httpx
+        from bs4 import BeautifulSoup
+    except ImportError as e:
+        return ToolResult(success=False, output="", error=f"dependency tidak terpasang: {e}")
+
+    try:
+        with httpx.Client(
+            follow_redirects=True, timeout=20.0,
+            headers={"User-Agent": "SIDIX-Agent/1.0 (mighan-brain-qa; standing-alone)"},
+        ) as client:
+            r = client.post(
+                "https://html.duckduckgo.com/html/",
+                data={"q": query, "kl": "id-id"},
+            )
+            r.raise_for_status()
+    except Exception as e:
+        return ToolResult(success=False, output="", error=f"gagal search: {type(e).__name__}: {e}")
+
+    try:
+        soup = BeautifulSoup(r.text, "html.parser")
+        results: list[dict] = []
+        for node in soup.select("div.result, div.web-result")[: max_results * 2]:
+            a = node.select_one("a.result__a, h2 a")
+            snippet_el = node.select_one(".result__snippet, .result__body")
+            if not a:
+                continue
+            title = a.get_text(" ", strip=True)
+            href = a.get("href", "").strip()
+            snippet = snippet_el.get_text(" ", strip=True) if snippet_el else ""
+            # DuckDuckGo kadang bungkus URL dengan redirect ?uddg=
+            if href.startswith("//duckduckgo.com/l/") or "duckduckgo.com/l/?uddg=" in href:
+                import urllib.parse as _up
+                qs = _up.parse_qs(_up.urlparse(href if href.startswith("http") else "https:" + href).query)
+                if "uddg" in qs:
+                    href = qs["uddg"][0]
+            if title and href.startswith("http"):
+                results.append({"title": title, "url": href, "snippet": snippet[:280]})
+            if len(results) >= max_results:
+                break
+    except Exception as e:
+        return ToolResult(success=False, output="", error=f"parse gagal: {e}")
+
+    if not results:
+        return ToolResult(success=True, output=f"(tidak ada hasil untuk '{query}')")
+    lines = [f"# Hasil pencarian: {query}", ""]
+    for i, r in enumerate(results, 1):
+        lines.append(f"{i}. **{r['title']}**")
+        lines.append(f"   {r['url']}")
+        if r["snippet"]:
+            lines.append(f"   {r['snippet']}")
+        lines.append("")
+    citations = [{"type": "web_search", "url": r["url"], "title": r["title"]} for r in results]
+    return ToolResult(success=True, output="\n".join(lines), citations=citations)
+
+
+# ── pdf_extract — own stack, extract teks dari PDF file path ───────────────────
+_PDF_MAX_PAGES = 50
+_PDF_MAX_CHARS = 15000
+
+
+def _tool_pdf_extract(args: dict) -> ToolResult:
+    """
+    Ekstrak teks dari file PDF di path lokal (sudah ada di workspace).
+    Standing-alone: pakai pdfplumber (pure Python, MIT license), no cloud OCR.
+    Params: path (str, wajib, harus di workspace root), pages (str, opsional "1-5" atau "3").
+    """
+    path_str = str(args.get("path", "")).strip()
+    if not path_str:
+        return ToolResult(success=False, output="", error="path wajib diisi")
+
+    try:
+        import pdfplumber
+    except ImportError:
+        return ToolResult(
+            success=False, output="",
+            error="dependency pdfplumber belum terpasang di server. Jalankan: pip install pdfplumber",
+        )
+
+    ws_root = get_agent_workspace_root()
+    try:
+        pdf_path = (ws_root / path_str).resolve()
+        if not str(pdf_path).startswith(str(ws_root.resolve())):
+            return ToolResult(success=False, output="", error="path di luar workspace tidak diizinkan")
+        if not pdf_path.exists():
+            return ToolResult(success=False, output="", error=f"file tidak ada: {path_str}")
+        if pdf_path.suffix.lower() != ".pdf":
+            return ToolResult(success=False, output="", error="file harus .pdf")
+    except Exception as e:
+        return ToolResult(success=False, output="", error=f"path tidak valid: {e}")
+
+    # Parse page range
+    pages_spec = str(args.get("pages", "")).strip()
+    page_set: set[int] | None = None
+    if pages_spec:
+        try:
+            page_set = set()
+            for part in pages_spec.split(","):
+                part = part.strip()
+                if "-" in part:
+                    a, b = part.split("-", 1)
+                    for i in range(int(a), int(b) + 1):
+                        page_set.add(i - 1)
+                else:
+                    page_set.add(int(part) - 1)
+        except Exception:
+            return ToolResult(success=False, output="", error=f"format pages tidak valid: '{pages_spec}'")
+
+    try:
+        out_lines: list[str] = []
+        total = 0
+        with pdfplumber.open(pdf_path) as pdf:
+            n_pages = len(pdf.pages)
+            for idx, page in enumerate(pdf.pages):
+                if idx >= _PDF_MAX_PAGES:
+                    out_lines.append(f"\n…(dipotong pada halaman {_PDF_MAX_PAGES})")
+                    break
+                if page_set is not None and idx not in page_set:
+                    continue
+                text = page.extract_text() or ""
+                out_lines.append(f"--- Halaman {idx + 1} ---")
+                out_lines.append(text.strip())
+                total += len(text)
+                if total > _PDF_MAX_CHARS:
+                    out_lines.append(f"\n…(dipotong di ~{_PDF_MAX_CHARS} karakter)")
+                    break
+    except Exception as e:
+        return ToolResult(success=False, output="", error=f"gagal parse PDF: {type(e).__name__}: {e}")
+
+    out = "\n\n".join(out_lines)[: _PDF_MAX_CHARS + 500]
+    return ToolResult(
+        success=True,
+        output=f"# PDF: {path_str} ({n_pages} halaman)\n\n{out}",
+        citations=[{"type": "pdf_extract", "path": path_str, "pages": n_pages}],
+    )
+
+
 # ── Registry ──────────────────────────────────────────────────────────────────
 
 TOOL_REGISTRY: dict[str, ToolSpec] = {
@@ -994,6 +1148,29 @@ TOOL_REGISTRY: dict[str, ToolSpec] = {
         params=["code"],
         permission="open",
         fn=_tool_code_sandbox,
+    ),
+    "web_search": ToolSpec(
+        name="web_search",
+        description=(
+            "Cari web umum via DuckDuckGo HTML (own parser, no API vendor). "
+            "Gunakan untuk pencarian luas, baru, atau yang tidak tercakup corpus/Wikipedia. "
+            "Params: query (str, wajib), max_results (int, default 8, max 15). "
+            "Return: daftar judul + URL + snippet."
+        ),
+        params=["query", "max_results"],
+        permission="open",
+        fn=_tool_web_search,
+    ),
+    "pdf_extract": ToolSpec(
+        name="pdf_extract",
+        description=(
+            "Ekstrak teks dari PDF file di workspace (pdfplumber own-stack). "
+            "Cocok setelah user upload PDF untuk dianalisis. "
+            "Params: path (wajib, relatif workspace root), pages (opsional, '1-5' atau '3,7')."
+        ),
+        params=["path", "pages"],
+        permission="open",
+        fn=_tool_pdf_extract,
     ),
 }
 
