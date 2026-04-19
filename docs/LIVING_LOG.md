@@ -3157,3 +3157,38 @@ Konteks: Budget Rp 300-600k approved. Laptop ASUS TUF Gaming A15 FA506QM ada RTX
   * GPU: https://scribble-trimness-alike.ngrok-free.dev (tunnel ke laptop)
 - KNOWN LIMIT: 97s per image = slow UX tapi acceptable untuk beta validate demand. Optimize setelah ada 10+ user feedback.
 - TODO future: replace laptop ngrok dengan RunPod serverless (-40/bulan) kalau demand >10 image/hari, cut latency ke ~20s.
+
+## 2026-04-20 (self-training status honest assessment)
+
+User tanya: apakah SIDIX sudah bisa train dirinya sendiri?
+
+JAWAB: SETENGAH JALAN. Layer 3 (growth loop per CLAUDE.md) belum fully autonomous.
+
+### Auto (tanpa intervensi manusia):
+- LearnAgent cron daily 04:00 UTC: fetch 5 connector (arXiv/Wikipedia/MusicBrainz/GitHub/Quran)
+- process_queue cron daily 04:30 UTC: parse + queue ke draft
+- Corpus BM25 indexing: auto rebuild saat file baru
+- Praxis logging: tiap chat session tercatat JSONL sebagai material training potensial
+- Knowledge gap detector: deteksi low-confidence tapi tidak trigger retrain
+
+### Masih manual:
+- Draft -> public corpus approval (butuh human review)
+- corpus_to_training.py (generate QA pair): module ada, belum cron
+- LoRA retrain di Kaggle/GPU: manual upload notebook + run
+- Adapter swap ke production: manual symlink
+- Full closed loop research->approve->train->deploy->validate: BELUM E2E
+
+### Artinya:
+SIDIX bisa 'baca' data baru tiap hari (RAG growing), tapi bobot LoRA-nya tetap yang training 2026-04. Untuk benar-benar 'belajar' dalam arti update neural net, masih butuh tangan founder.
+
+### Untuk fully autonomous butuh 3 komponen (estimasi 2-3 sprint):
+1. Auto curator - scoring draft (relevance + sanad_tier + Maqashid) tanpa human
+2. Auto trainer - cron mingguan: corpus_to_training -> JSONL -> submit Kaggle API -> download adapter
+3. Auto deployer - A/B test new vs current adapter di subset user -> promote kalau win
+
+### Roadmap mapping:
+- Fase Baby (sekarang): foundation sudah ada, autonomy belum
+- Fase Child (Q3 2026): image/audio/skill library tambah, masih manual train
+- Fase Adolescent (Q4 2026-Q1 2027): SELF-EVOLVING SPIN + model merging + self-reward - INI fase autonomous training sesungguhnya
+
+Jadi SIDIX saat ini: 'makhluk yang belajar baca, belum bisa nulis ulang otaknya sendiri'. Autonomy real targetnya Q4 2026.
