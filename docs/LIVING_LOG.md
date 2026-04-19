@@ -3046,3 +3046,12 @@ Konteks: Budget Rp 300-600k approved. Laptop ASUS TUF Gaming A15 FA506QM ada RTX
 - BLOCKER [G.3] ngrok/tunnel setup - butuh user sign up ngrok.com gratis + authtoken. Alternative: cloudflared (no account). Server lokal laptop belum exposed ke VPS ctrl.sidixlab.com.
 - STATE: SDXL local OPERATIONAL standalone. Brain_qa tool SIAP tapi butuh SIDIX_IMAGE_GEN_URL di VPS environment setelah tunnel setup.
 - NEXT: User sign up ngrok (2 menit) -> jalankan ngrok http 8000 di laptop -> copy public URL -> set env var di VPS .env -> restart sidix-brain -> tools_available=18->19.
+
+## 2026-04-19 (Tahap G DONE - ngrok tunnel live, text_to_image tool registered)
+
+- IMPL [G.3] ngrok.exe 3.37.6 extracted ke D:\sidix-local\. Authtoken configured (user regenerate setelah sempat typo I vs l). Tunnel public URL: https://scribble-trimness-alike.ngrok-free.dev -> localhost:8000. Tunnel test /health: OK (gpu RTX 3060 6.4GB).
+- DEPLOY [G.4] VPS /opt/sidix/apps/brain_qa/.env: SIDIX_IMAGE_GEN_URL set. pm2 restart sidix-brain --update-env. Health check: tools_available 18 -> 19 (+text_to_image), model_ready true.
+- TEST [G.5] /agent/chat dengan prompt masjid demak: ReAct agent belum auto-pick text_to_image tool (butuh prompt engineering persona MIGHAN di sprint berikut). Tapi infra end-to-end (tunnel + tool registered + VPS env) confirmed WORKING.
+- MILESTONE Sprint 3 tahap A-G DONE. Laptop local image gen operational + terhubung ke SIDIX brain VPS via tunnel. Total biaya saat ini: Rp 0 (ngrok free tier).
+- CAVEAT ngrok free: URL berubah setiap restart ngrok. Untuk permanent URL butuh paid tier (\/mo) atau alternatif cloudflared (free static).
+- NEXT: (a) prompt tuning persona MIGHAN supaya auto-pick text_to_image, (b) UI SIDIX render image di chat bubble, (c) optional cloudflared untuk URL permanent.
