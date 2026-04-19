@@ -2782,3 +2782,20 @@ promosi dirinya sendiri.
 - Connector tidak hardcode key/token (pakai os.getenv)
 - Endpoint /learn/* dilindungi admin token
 - Tidak ada PII/IP/secret di file baru
+
+
+## 2026-04-19 — FIX UX app.sidixlab.com (modal auto-muncul)
+
+- FIX: `SIDIX_USER_UI/index.html` — `.contrib-modal-backdrop { display: flex }` inline style menimpa Tailwind `.hidden` karena spesifisitas sama; About modal auto-terbuka fullscreen nutupin chat saat app dibuka. Fix pakai `:not(.hidden)` untuk display:flex dan `!important` untuk `.hidden`.
+- IMPL: Hapus total modal Gabung Kontributor dari app (78 baris HTML), pindahkan flow ke `sidixlab.com#contributor` sebagai link eksternal di footer chat.
+- IMPL: Hapus `btn-contributor` dari header desktop + `mob-nav-contrib` dari mobile bottom nav. Mobile nav jadi 4 item: Chat / About / Settings / SignIn.
+- DEPLOY: rsync `dist/` ke `/www/wwwroot/app.sidixlab.com/` — nginx serve static dari situ, BUKAN PM2 sidix-ui.
+- Commits: b975ed1 → f995bde → 335747e
+
+## 2026-04-19 (lanjutan) — FIX backend connection + nginx proxy realization
+
+- FIX: Backend "tidak terhubung" karena `VITE_BRAIN_QA_URL` kosong → Vite build default `http://localhost:8765` di JS bundle. Browser user tidak punya localhost:8765, jadi gagal connect.
+- SOLUTION: Buat `/opt/sidix/SIDIX_USER_UI/.env` isi `VITE_BRAIN_QA_URL=https://ctrl.sidixlab.com`, rebuild, `pm2 restart sidix-ui`. JS bundle baru (hash DWspWw_W) sekarang connect ke ctrl.sidixlab.com yang di-proxy nginx ke 127.0.0.1:8765.
+- DISCOVERY: Nginx config `app.sidixlab.com.conf` ternyata `proxy_pass http://127.0.0.1:4000` (bukan serve static dari /www/wwwroot). PM2 `sidix-ui` jalan `serve dist -p 4000` dari `/opt/sidix/SIDIX_USER_UI/`. Jadi deploy app = `git pull + npm run build + pm2 restart sidix-ui` (rsync ke /www/wwwroot tidak perlu). Memory deploy_nginx_sync.md SALAH — perlu dikoreksi.
+- CORS sudah OK: backend pakai `allow_origins=["*"]` + OPTIONS preflight 200.
+- Sequence fix hari ini: hapus Gabung Kontributor dari nav → hapus modal HTML → fix CSS `.hidden` vs `.contrib-modal-backdrop` → fix backend URL via .env.
