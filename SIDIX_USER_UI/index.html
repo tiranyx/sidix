@@ -95,9 +95,11 @@
         background: rgba(10,8,5,0.88);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
-        display: flex; align-items: flex-end;
+        align-items: flex-end;
         justify-content: center;
       }
+      .contrib-modal-backdrop:not(.hidden) { display: flex; }
+      .contrib-modal-backdrop.hidden { display: none !important; }
       @media (min-width: 768px) {
         .contrib-modal-backdrop { align-items: center; }
       }
