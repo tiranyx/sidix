@@ -775,7 +775,7 @@ def run_react(
             # Prompt untuk SDXL: question asli user (SDXL pakai English best tapi juga paham ID sederhana)
             _result = _call_tool(
                 tool_name="text_to_image",
-                args={"prompt": question, "steps": 25, "width": 1024, "height": 1024},
+                args={"prompt": question, "steps": 20, "width": 768, "height": 768},
                 session_id=session_id,
                 step=1,
                 allow_restricted=False,

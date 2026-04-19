@@ -1143,14 +1143,14 @@ def _tool_text_to_image(args: dict) -> ToolResult:
     if not endpoint:
         return ToolResult(success=False, output="",
                           error="SIDIX_IMAGE_GEN_URL belum di-set (env var). Set ke URL SDXL server (ngrok/RunPod).")
-    steps = max(10, min(int(args.get("steps", 25)), 50))
-    width = max(512, min(int(args.get("width", 1024)), 1536))
-    height = max(512, min(int(args.get("height", 1024)), 1536))
+    steps = max(10, min(int(args.get("steps", 20)), 50))
+    width = max(512, min(int(args.get("width", 768)), 1536))
+    height = max(512, min(int(args.get("height", 768)), 1536))
     payload = json.dumps({"prompt": prompt, "steps": steps, "width": width, "height": height}).encode()
     req = urllib.request.Request(f"{endpoint}/generate", data=payload,
                                  headers={"Content-Type": "application/json"}, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=180) as resp:
+        with urllib.request.urlopen(req, timeout=360) as resp:
             data = json.loads(resp.read().decode())
     except Exception as e:
         return ToolResult(success=False, output="", error=f"image_gen request failed: {e}")
