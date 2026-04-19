@@ -277,6 +277,14 @@ def create_app() -> "FastAPI":
 
     app.add_middleware(SecurityHeadersMiddleware)
 
+    # ── L1+L2 Network/Request Layer Security Middleware ─────────────────────
+    try:
+        from .security.middleware import SidixSecurityMiddleware
+        app.add_middleware(SidixSecurityMiddleware)
+        print("[security] SidixSecurityMiddleware activated (multi-layer defense)")
+    except Exception as _e:
+        print(f"[security] middleware load failed: {_e}")
+
     # ── /health ───────────────────────────────────────────────────────────────
     @app.get("/health")
     def health():
@@ -2685,6 +2693,66 @@ h1{{color:#0af}}p{{color:#aaa}}a{{color:#0af}}</style></head>
         try:
             from .hafidz_mvp import handle_retrieve
             return handle_retrieve(cas_hash)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── /sidix/security/* ─ Multi-Layer Defense Inspection ────────────────────
+
+    @app.get("/sidix/security/audit-stats", tags=["Security"])
+    def sec_audit_stats(days: int = 7):
+        """Statistik security event N hari terakhir (PII di-hash)."""
+        try:
+            from .security.audit_log import get_audit_stats
+            return {"ok": True, "stats": get_audit_stats(days=days)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/sidix/security/recent-events", tags=["Security"])
+    def sec_recent_events(days: int = 1, severity_min: str = "MEDIUM", limit: int = 50):
+        """Recent security events (default MEDIUM+)."""
+        try:
+            from .security.audit_log import get_recent_events
+            events = get_recent_events(days=days, severity_min=severity_min, limit=limit)
+            return {"ok": True, "count": len(events), "events": events}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/security/validate-input", tags=["Security"])
+    def sec_validate_input(text: str, threshold: int = 70):
+        """Cek apakah text mengandung prompt injection."""
+        try:
+            from .security.prompt_injection_defense import detect_injection
+            report = detect_injection(text, threshold=threshold)
+            return {"ok": True, "report": report.to_dict()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/security/scan-output", tags=["Security"])
+    def sec_scan_output(text: str, redact: bool = True):
+        """Scan output untuk PII/secrets, optional auto-redact."""
+        try:
+            from .security.pii_filter import scan_output
+            report = scan_output(text, redact=redact)
+            return {"ok": True, "report": report.to_dict()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/sidix/security/blocked-ips", tags=["Security"])
+    def sec_blocked_ips():
+        """List IP yang sedang di-block (hashed untuk privacy)."""
+        try:
+            from .security.request_validator import list_blocked_ips
+            return {"ok": True, "blocked": list_blocked_ips()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/security/unblock-ip", tags=["Security"])
+    def sec_unblock_ip(ip: str):
+        """Manual unblock IP (admin only via PIN nanti)."""
+        try:
+            from .security.request_validator import unblock_ip
+            ok = unblock_ip(ip)
+            return {"ok": ok}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
