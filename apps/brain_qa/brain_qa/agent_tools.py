@@ -1117,7 +1117,29 @@ def _tool_text_to_image(args: dict) -> ToolResult:
     prompt = str(args.get("prompt", "")).strip()
     if not prompt:
         return ToolResult(success=False, output="", error="prompt kosong")
+    # Try env var first, fallback ke .env file (buat PM2 yang tidak load dotenv)
     endpoint = os.environ.get("SIDIX_IMAGE_GEN_URL", "").rstrip("/")
+    if not endpoint:
+        try:
+            from dotenv import load_dotenv
+            env_path = Path(__file__).resolve().parent.parent / ".env"
+            if env_path.exists():
+                load_dotenv(env_path, override=False)
+                endpoint = os.environ.get("SIDIX_IMAGE_GEN_URL", "").rstrip("/")
+        except Exception:
+            pass
+    # Last resort: parse .env manual kalau python-dotenv belum terinstall
+    if not endpoint:
+        env_path = Path(__file__).resolve().parent.parent / ".env"
+        if env_path.exists():
+            try:
+                for line in env_path.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line.startswith("SIDIX_IMAGE_GEN_URL="):
+                        endpoint = line.split("=", 1)[1].strip().strip('"').strip("'").rstrip("/")
+                        break
+            except Exception:
+                pass
     if not endpoint:
         return ToolResult(success=False, output="",
                           error="SIDIX_IMAGE_GEN_URL belum di-set (env var). Set ke URL SDXL server (ngrok/RunPod).")
