@@ -2471,3 +2471,82 @@ Hari panjang penuh hasil compound. SIDIX sekarang punya:
 - Curriculum 130 topik berkesinambungan
 
 Selamat istirahat. Besok bangun, baca CHECKPOINT, lanjut sesuai queue.
+
+
+## 2026-04-19 - Threads Autopost FIX + Content Designer 8-Type LIVE
+
+### Mandate user
+Cek kenapa Threads autopost belum jalan, design skill konten + autopost,
+mumpung API gratis. Tujuan: cari user beta, harvest data, ajak kontributor,
+otomasi promosi multi-channel.
+
+### Diagnosis
+Root cause: scripts/threads_daily.sh broken (escape chars rusak dari editor
+Windows) - sebabnya cron tidak pernah jalan benar. Token Threads valid,
+endpoint scheduler/auto-content jalan dry-run.
+
+### Fix
+[FIX] scripts/threads_daily.sh - rewrite clean, 8 sub-command
+  (post/harvest/mentions/consume-queue/series-hook/series-detail/series-cta/status)
+[CRON] 9 jadwal baru:
+  3 series posts (jam 8/13/19 - peak engagement Indonesia)
+  3 consume-queue (jam 11:30/17:30/21:30) - dari curriculum + content_designer
+  mentions tiap 4 jam (engagement)
+  harvest tiap 6 jam (data mining)
+  daily growth jam 3 pagi (existing)
+
+### Build
+[IMPL] apps/brain_qa/brain_qa/content_designer.py (290 baris)
+  8 tipe konten: hook, education, case_study, behind_scene,
+  invitation, question, quote, announcement
+  fill_queue_for_week() generate 18-21 post variasi sekaligus
+
+[IMPL] 4 endpoint /sidix/content/*:
+  POST /fill-week (batch 21 post)
+  GET /queue-distribution (stats by type)
+  POST /design-quote (single)
+  POST /design-invitation?variant= (single)
+
+### Verifikasi LIVE (3 real posts)
+[POST 1] /threads/scheduler/run dry_run=false:
+  post_id 18097823213014190
+  permalink https://www.threads.net/@sidixlab/post/18097823213014190
+[POST 2-3] consume-queue:
+  thread_id 17959487556076518 + 17849949888676738
+  Topic: zero-knowledge proof (dari curriculum lesson)
+[FILL] fill-week:
+  18 post appended (4 question + 4 hook + 3 invitation + 3 behind_scene
+  + 2 quote + 2 announcement)
+
+### Status Queue Final
+- Total: 23 post
+- Published: 2
+- Queued: 21
+- Stock: ~3.5 hari pada 6 post/hari
+
+### Compound Effect Strategi
+3 funnel akselerasi:
+1. User Acquisition (3 invitation + 3 series/hari -> ~30 touchpoint/week)
+2. Contributor Acquisition (behind-scene + quote -> builder narrative)
+3. Data Harvest (4 question/week + harvest cron -> opinion mining)
+
+Quarterly projection: ~540-810 post outreach + sustained brand awareness
+Threads ID, otomatis tanpa manual writing.
+
+### Commit pointer
+- 0d39682 feat(threads): fix broken script + content_designer 8-type + 9 cron baru
+- (next) doc note 149 + log
+
+### Yang masih perlu user manual
+- Refresh Threads token sebelum 60 hari (manual via /threads/auth)
+- Apply nginx_security.conf (sprint sebelumnya, masih pending)
+- Upload batch Kaggle untuk LoRA v1
+
+### Sprint hari ini total
+22 commits (0d39682 = 22nd)
+18 research notes baru (132-149)
+15 modul Python baru (incl content_designer)
+~62 endpoint live (incl /sidix/content/*)
+1268 training pairs siap LoRA
+9 cron jadwal threads
+21 post queued ready autopost
