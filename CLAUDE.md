@@ -155,6 +155,28 @@ brain/manifest.json            ← konfigurasi corpus path
 
 ---
 
+## 🔒 UI LOCK — `app.sidixlab.com` (2026-04-19)
+
+Tampilan chatboard app.sidixlab.com **DIKUNCI** versi 2026-04-19. Jangan ubah struktur kecuali user meminta eksplisit.
+
+**Struktur final (lock):**
+- **Header chat** (`index.html` ~200-286): Status dot + SIDIX title, tombol "Tentang SIDIX", tombol **Sign In** di center, persona selector kanan, TIDAK ADA "Gabung Kontributor" di header.
+- **Empty state** (`index.html` ~288-343): Logo SIDIX kecil (w-12 md:w-16) + title "SIDIX" + tagline "Diskusi dan tanya apa saja — jujur, bersumber, bisa diverifikasi" + 4 quick-prompt cards (**Partner / Coding / Creative / Chill**) + free badge.
+- **Footer input**: textarea "Tanya SIDIX…" + paperclip + send button + opsi (Korpus saja / Fallback web / Mode ringkas) + "SIDIX v1.0 · Self-hosted · Free · [Gabung Kontributor](https://sidixlab.com#contributor)".
+- **Mobile bottom nav**: 4 item (Chat / Tentang / Setting / Sign In) — BUKAN 5, TIDAK ADA Kontributor.
+- **Tidak ada modal yang auto-muncul**: `.contrib-modal-backdrop` sudah pakai `:not(.hidden)` + `!important` agar About modal tidak muncul otomatis.
+
+**Deploy topology** (PENTING — jangan salah lagi):
+- `app.sidixlab.com` → nginx `proxy_pass :4000` → PM2 `sidix-ui` (`serve dist -p 4000` dari `/opt/sidix/SIDIX_USER_UI/`)
+- `ctrl.sidixlab.com` → nginx `proxy_pass :8765` → PM2 `sidix-brain` (FastAPI)
+- `sidixlab.com` (landing) → static `/www/wwwroot/sidixlab.com/`
+- Deploy app: `git pull && npm run build && pm2 restart sidix-ui` (RSYNC ke `/www/wwwroot/app.sidixlab.com/` TIDAK PERLU — itu hanya fallback root nginx)
+- **Kritikal**: `.env` di `/opt/sidix/SIDIX_USER_UI/.env` harus isi `VITE_BRAIN_QA_URL=https://ctrl.sidixlab.com`. Tanpa ini, build default `localhost:8765` → "Backend tidak terhubung".
+
+**Kapabilitas tool yang terpasang di chat** (per 2026-04-19): lihat `docs/SIDIX_CAPABILITY_MAP.md`.
+
+---
+
 ## 🧠 Cara Claude Bekerja di Proyek Ini
 
 1. **Baca konteks** — cek LIVING_LOG, research notes terbaru, state file yang relevan

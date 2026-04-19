@@ -709,6 +709,132 @@ def _tool_disabled(args: dict) -> ToolResult:
     return ToolResult(success=False, output="", error="Tool ini disabled oleh permission gate")
 
 
+# ── web_fetch — own stack, fetch HTML publik, strip ke markdown/plain ─────────
+_WEB_FETCH_MAX_BYTES = 800_000  # ~800 KB HTML mentah
+_WEB_FETCH_TEXT_LIMIT = 6000    # karakter teks yang dikembalikan ke agent
+
+
+def _tool_web_fetch(args: dict) -> ToolResult:
+    """
+    Fetch URL publik → teks bersih (BeautifulSoup + strip script/style).
+    Standing-alone: pakai httpx + bs4 sendiri, BUKAN API vendor search/fetch.
+    Params: url (wajib, http/https saja), max_chars (opsional, default 6000).
+    """
+    url = str(args.get("url", "")).strip()
+    if not url:
+        return ToolResult(success=False, output="", error="url wajib diisi")
+    if not (url.startswith("http://") or url.startswith("https://")):
+        return ToolResult(success=False, output="", error="url harus http:// atau https://")
+
+    max_chars = int(args.get("max_chars", _WEB_FETCH_TEXT_LIMIT))
+    max_chars = max(500, min(max_chars, 20000))
+
+    try:
+        import httpx
+        from bs4 import BeautifulSoup
+    except ImportError as e:
+        return ToolResult(success=False, output="", error=f"dependency tidak terpasang: {e}")
+
+    try:
+        with httpx.Client(
+            follow_redirects=True,
+            timeout=20.0,
+            headers={"User-Agent": "SIDIX-Agent/1.0 (mighan-brain-qa; standing-alone)"},
+        ) as client:
+            r = client.get(url)
+            r.raise_for_status()
+            raw = r.content[:_WEB_FETCH_MAX_BYTES]
+    except Exception as e:
+        return ToolResult(success=False, output="", error=f"gagal fetch: {type(e).__name__}: {e}")
+
+    try:
+        soup = BeautifulSoup(raw, "html.parser")
+        title = soup.title.string.strip() if soup.title and soup.title.string else "Untitled"
+        for tag in soup(["script", "style", "noscript", "nav", "footer", "aside"]):
+            tag.decompose()
+        text = soup.get_text("\n")
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        text = re.sub(r"[ \t]+", " ", text).strip()
+    except Exception as e:
+        return ToolResult(success=False, output="", error=f"parse gagal: {e}")
+
+    truncated = len(text) > max_chars
+    body = text[:max_chars] + ("\n\n…(dipotong)" if truncated else "")
+    out = f"# {title}\nURL: {url}\n\n{body}"
+    return ToolResult(
+        success=True,
+        output=out,
+        citations=[{"type": "web_fetch", "url": url, "title": title}],
+    )
+
+
+# ── code_sandbox — Python subprocess own-stack, timeout + output cap ───────────
+_CODE_SANDBOX_TIMEOUT = 10     # detik
+_CODE_SANDBOX_MAX_OUTPUT = 4000  # karakter stdout+stderr
+
+
+def _tool_code_sandbox(args: dict) -> ToolResult:
+    """
+    Jalankan snippet Python di subprocess terisolasi.
+    Standing-alone: pakai subprocess + tempfile sendiri, no external service.
+    Safety: timeout 10s, cwd sementara, stdin kosong, output dipotong.
+    Params: code (str, wajib Python). Return: stdout + stderr.
+    """
+    import subprocess
+    import sys
+    import tempfile
+
+    code = str(args.get("code", ""))
+    if not code.strip():
+        return ToolResult(success=False, output="", error="code wajib diisi")
+    if len(code) > 20000:
+        return ToolResult(success=False, output="", error="code terlalu panjang (max 20KB)")
+
+    # Heuristik keamanan ringan (bukan sandbox penuh — user internal)
+    forbidden = ["os.system", "subprocess.", "socket.", "__import__('os')"]
+    for pat in forbidden:
+        if pat in code:
+            return ToolResult(
+                success=False, output="",
+                error=f"pola terlarang terdeteksi: {pat}. Code sandbox hanya untuk komputasi, bukan IO sistem.",
+            )
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="sidix_sbx_") as tmp:
+            script_path = Path(tmp) / "main.py"
+            script_path.write_text(code, encoding="utf-8")
+            proc = subprocess.run(
+                [sys.executable, "-I", "-B", str(script_path)],
+                cwd=tmp,
+                input="",
+                capture_output=True,
+                text=True,
+                timeout=_CODE_SANDBOX_TIMEOUT,
+                env={"PATH": os.environ.get("PATH", ""), "LANG": "C.UTF-8"},
+            )
+    except subprocess.TimeoutExpired:
+        return ToolResult(
+            success=False, output="",
+            error=f"code sandbox timeout ({_CODE_SANDBOX_TIMEOUT}s). Hindari loop tak berujung / IO lambat.",
+        )
+    except Exception as e:
+        return ToolResult(success=False, output="", error=f"sandbox gagal: {type(e).__name__}: {e}")
+
+    stdout = (proc.stdout or "")[:_CODE_SANDBOX_MAX_OUTPUT]
+    stderr = (proc.stderr or "")[:_CODE_SANDBOX_MAX_OUTPUT // 2]
+    combined = []
+    if stdout:
+        combined.append(f"STDOUT:\n{stdout}")
+    if stderr:
+        combined.append(f"STDERR:\n{stderr}")
+    combined.append(f"(exit code: {proc.returncode})")
+    return ToolResult(
+        success=(proc.returncode == 0),
+        output="\n\n".join(combined) if combined else "(tidak ada output)",
+        citations=[{"type": "code_sandbox", "exit_code": proc.returncode}],
+    )
+
+
 # ── Registry ──────────────────────────────────────────────────────────────────
 
 TOOL_REGISTRY: dict[str, ToolSpec] = {
@@ -847,13 +973,27 @@ TOOL_REGISTRY: dict[str, ToolSpec] = {
         permission="open",
         fn=_tool_roadmap_item_references,
     ),
-    # Contoh tool restricted — bisa di-enable nanti
     "web_fetch": ToolSpec(
         name="web_fetch",
-        description="Fetch konten dari URL eksternal. RESTRICTED — perlu izin.",
-        params=["url"],
-        permission="restricted",
-        fn=_tool_disabled,
+        description=(
+            "Fetch halaman web publik (HTTP/HTTPS) → teks bersih (HTML di-strip). "
+            "Gunakan jika corpus + Wikipedia kurang, untuk baca dokumentasi/artikel. "
+            "Params: url (str, wajib, http/https), max_chars (int, default 6000)."
+        ),
+        params=["url", "max_chars"],
+        permission="open",
+        fn=_tool_web_fetch,
+    ),
+    "code_sandbox": ToolSpec(
+        name="code_sandbox",
+        description=(
+            "Jalankan snippet Python (komputasi murni, no IO sistem) di subprocess terisolasi. "
+            "Cocok untuk: hitung, transformasi data, simulasi, parse teks. Timeout 10 detik. "
+            "Params: code (str, Python source). Return: stdout + stderr."
+        ),
+        params=["code"],
+        permission="open",
+        fn=_tool_code_sandbox,
     ),
 }
 
