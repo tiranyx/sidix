@@ -1811,3 +1811,95 @@ Notes baru: 132 - 143 (12 notes baru)
 Modul baru: 6 (autonomous_researcher, note_drafter, web_research, daily_growth,
 sanad_builder, identity_mask, auto_lora, threads_consumer, multi_modal_router, skill_modes)
 Endpoints baru: ~25
+
+## 2026-04-18 — Sprint 6: Curriculum Engine + Skill Builder + Drive D Adoption
+
+### Konteks
+User mandate: framework supaya SIDIX bisa olah informasi jadi metode belajar dan modul. Bisa belajar coding/programming/apps/games/api/devops/fullstack/frontend, fetch+gen image style, video harian, TTS, riset pengetahuan umum + akademis. Otak SIDIX tumbuh dari pengalaman.
+Pakai resources Drive D yang ada.
+
+### Hasil Inventarisasi Drive D (via Explore agent)
+HIGH potensi:
+- brain/datasets: 4 jsonl (corpus_qa, finetune_sft, qa_pairs, memory_cards)
+- brain/public/research_notes: 50+ md (technical depth)
+- brain/public/coding: 12 roadmap files
+- brain/public/principles: 10 md (Islamic epistemology)
+- apps/brain_qa: existing QA pipeline + skill ledger
+
+MEDIUM potensi:
+- apps/vision: 24 modul (caption, detection, chart_reader, sketch_to_svg, dll)
+- apps/image_gen: 24 modul (style_transfer, inpainting, color_grading, lora_adapter, dll)
+- apps/{telegram_sidix, threads_sidix, sidix_gateway}: channel adapters
+- docs/: 40+ project docs
+
+### Implementasi
+
+[IMPL] curriculum_engine.py (350 baris)
+  - 12 domain: coding_python/js, fullstack, frontend_design, backend_devops,
+    game_dev, data_science, image_ai, video_ai, audio_ai, research_methodology,
+    general_knowledge, islamic_epistemology
+  - 10 topik per domain = 130 topik total
+  - LessonPlan dataclass + state persistent .data/curriculum/progress.json
+  - pick_today_lesson() idempotent + execute_today_lesson() end-to-end
+  - rotation 12 hari/cycle + deepening setelah cycle complete
+
+[IMPL] skill_builder.py (300 baris)
+  - SkillRecord + JSONL registry .data/skill_library/registry.jsonl
+  - discover_skills() auto-scan brain/skills + apps/{vision,image_gen}
+  - run_skill(id, **kwargs) resolver
+  - harvest_dataset_jsonl() convert format apa pun → ChatML
+  - extract_lessons_from_note() research note → training pair per H2
+  - suggest_skills_for_lesson() keyword match
+
+[IMPL] daily_growth.py — param use_curriculum=True default, prioritas
+  curriculum lesson sebelum exploration topic random
+
+[IMPL] 11 endpoint baru:
+  /sidix/curriculum/{status,today,history,domains,execute-today,reset/{domain}}
+  /sidix/skills (list) /sidix/skills/discover /sidix/skills/{id}/run
+  /sidix/skills/{harvest-dataset,extract-from-note}
+
+[SCAFFOLD] 4 skill manifest contoh:
+  brain/skills/vision/{image_caption,chart_reader}/skill.json
+  brain/skills/image_gen/{style_transfer,inpainting}/skill.json
+
+[SCRIPT] apps/brain_qa/scripts/harvest_drive_d_datasets.py — adopt 4 dataset
+  Drive D ke training pipeline (one-shot)
+
+### Dokumentasi
+[DOC] brain/public/research_notes/144_curriculum_engine_skill_builder_fase6.md
+  Filosofi, 12 domain mapping, integrasi, endpoint, cara aktifkan, proyeksi
+  pertumbuhan (130 hari/cycle, deepening), keterbatasan jujur
+
+### Proyeksi Akumulasi (1 cycle = 130 hari)
+- 130 note baru di corpus
+- 1300+ training pair (auto-trigger LoRA berkali-kali)
+- 130 Threads post terjadwal
+- Coverage merata 12 domain
+
+Cycle 2 dan seterusnya: deepening — topik sama tapi SIDIX punya konteks
+sebelumnya di sidix_memory.
+
+### Status Deploy
+SSH key auth issue belum resolved sejak sprint 5 akhir. Kode sudah pushed
+ke GitHub (commit pending). User bisa manual: ssh root@<vps> +
+"cd /opt/sidix && git pull && pm2 restart sidix-brain". Cron jam 3 pagi
+juga akan auto-trigger /sidix/grow yang load modul baru.
+
+### Commits hari ini (kumulatif)
+1. 070b29a Fase 3 self-learning + research notes 132-137
+2. c08fcb7 Fase 4 daily_growth
+3. 6bee103 note 139 daily_growth
+4. 5ba0876 Sanad+Hafidz integration
+5. 4c5372b note 141 sanad+hafidz
+6. a394f8c Fase 5 multi-modal + skill modes + note 142
+7. 1936c92 log + test script
+8. e9999d2 opsec masking + ollama vision + auto-lora + threads consumer + landing
+9. b2153df note 143 opsec sprint
+10. (next) Fase 6 curriculum + skill_builder + note 144
+
+### TODO setelah deploy berhasil
+- Verify endpoint /sidix/curriculum/today live
+- Run /sidix/skills/discover (akan dapat ~48 skill auto-registered)
+- Run scripts/harvest_drive_d_datasets.py untuk adopt 4 dataset Drive D
+- Monitor cron jam 3 pagi → note baru pakai curriculum lesson

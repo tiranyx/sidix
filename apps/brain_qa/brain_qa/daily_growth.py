@@ -65,6 +65,7 @@ def run_daily_growth(
     queue_threads:  bool = True,
     generate_pairs: bool = True,
     dry_run:        bool = False,
+    use_curriculum: bool = True,    # Fase 6: pakai curriculum jika gap kosong
 ) -> GrowthCycleReport:
     """
     Eksekusi satu siklus pertumbuhan harian SIDIX.
@@ -92,10 +93,27 @@ def run_daily_growth(
         candidates = []
 
     if not candidates:
-        # Fallback: kalau tidak ada gap, generate growth dari topic random dari corpus
-        # agar SIDIX tetap belajar (eksplorasi, bukan hanya reaksi)
-        candidates = _generate_exploration_topics(n=top_n_gaps)
-        print(f"[daily_growth] no gaps → exploring {len(candidates)} topics otomatis")
+        # Fase 6: kalau curriculum aktif, prioritas pakai lesson hari ini
+        if use_curriculum:
+            try:
+                from .curriculum_engine import pick_today_lesson
+                lesson = pick_today_lesson()
+                candidates = [{
+                    "topic_hash":      f"curriculum_{lesson.date}_{lesson.domain}",
+                    "sample_question": lesson.research_query,
+                    "domain":          lesson.domain.split("_")[0],
+                    "frequency":       1,
+                    "from_detector":   False,
+                    "_curriculum_lesson": lesson.to_dict(),
+                }]
+                print(f"[daily_growth] no gaps → curriculum lesson: {lesson.domain} / {lesson.topic[:60]}")
+            except Exception as e:
+                print(f"[daily_growth] curriculum failed: {e}, falling back to exploration")
+                candidates = _generate_exploration_topics(n=top_n_gaps)
+        else:
+            # Fallback eksplorasi original
+            candidates = _generate_exploration_topics(n=top_n_gaps)
+            print(f"[daily_growth] no gaps → exploring {len(candidates)} topics otomatis")
 
     # ── 2. RISET + DRAFT ──────────────────────────────────────────────────────
     from .autonomous_researcher import (

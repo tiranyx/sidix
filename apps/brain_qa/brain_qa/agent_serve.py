@@ -2688,6 +2688,112 @@ h1{{color:#0af}}p{{color:#aaa}}a{{color:#0af}}</style></head>
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    # ── /sidix/curriculum/* ─ Daily Skill Rotator ─────────────────────────────
+
+    @app.get("/sidix/curriculum/status", tags=["Curriculum"])
+    def curriculum_status():
+        """Progress curriculum per domain (topics done/total/percent)."""
+        try:
+            from .curriculum_engine import get_curriculum_status
+            return {"ok": True, **get_curriculum_status()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/sidix/curriculum/today", tags=["Curriculum"])
+    def curriculum_today():
+        """Lesson plan untuk hari ini (idempotent — sama lesson sepanjang hari)."""
+        try:
+            from .curriculum_engine import pick_today_lesson
+            lesson = pick_today_lesson()
+            return {"ok": True, "lesson": lesson.to_dict()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/sidix/curriculum/history", tags=["Curriculum"])
+    def curriculum_history(days: int = 14):
+        """Riwayat lesson N hari terakhir."""
+        try:
+            from .curriculum_engine import get_lesson_history
+            return {"ok": True, "history": get_lesson_history(days=days)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.get("/sidix/curriculum/domains", tags=["Curriculum"])
+    def curriculum_domains():
+        """List semua domain belajar yang tersedia."""
+        try:
+            from .curriculum_engine import list_domains
+            return {"ok": True, "domains": list_domains()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/curriculum/execute-today", tags=["Curriculum"])
+    def curriculum_execute_today(auto_approve: bool = True):
+        """Eksekusi lesson hari ini end-to-end (research + draft + auto-approve)."""
+        try:
+            from .curriculum_engine import execute_today_lesson
+            return {"ok": True, **execute_today_lesson(auto_approve=auto_approve)}
+        except Exception as e:
+            import traceback
+            return {"ok": False, "error": str(e), "trace": traceback.format_exc()[-500:]}
+
+    @app.post("/sidix/curriculum/reset/{domain}", tags=["Curriculum"])
+    def curriculum_reset(domain: str):
+        """Reset progress 1 domain ke index 0 (mulai cycle baru)."""
+        try:
+            from .curriculum_engine import reset_domain_progress
+            ok = reset_domain_progress(domain)
+            return {"ok": ok, "domain": domain}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ── /sidix/skills/* ─ Skill Library ───────────────────────────────────────
+
+    @app.get("/sidix/skills", tags=["Skills"])
+    def skills_list(category: str = ""):
+        """List semua skill yang terdaftar (optional filter by category)."""
+        try:
+            from .skill_builder import list_skills
+            return {"ok": True, "skills": list_skills(category=category or None)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/skills/discover", tags=["Skills"])
+    def skills_discover():
+        """Auto-scan brain/skills + apps/{vision,image_gen} → register skill baru."""
+        try:
+            from .skill_builder import discover_skills
+            return {"ok": True, **discover_skills(write=True)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/skills/{skill_id}/run", tags=["Skills"])
+    def skills_run(skill_id: str):
+        """Jalankan skill tertentu (TODO: pass kwargs via body)."""
+        try:
+            from .skill_builder import run_skill
+            return run_skill(skill_id)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/skills/harvest-dataset", tags=["Skills"])
+    def skills_harvest(jsonl_path: str, max_samples: int = 100):
+        """Adopt dataset jsonl jadi training pairs (corpus_qa, finetune_sft, dll)."""
+        try:
+            from .skill_builder import harvest_dataset_jsonl
+            return harvest_dataset_jsonl(jsonl_path, max_samples=max_samples)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/skills/extract-from-note", tags=["Skills"])
+    def skills_extract_note(note_path: str):
+        """Ekstrak training pairs dari research note markdown."""
+        try:
+            from .skill_builder import extract_lessons_from_note
+            return extract_lessons_from_note(note_path)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     # ── /sidix/lora/* ─ Auto LoRA Pipeline ────────────────────────────────────
 
     @app.get("/sidix/lora/status", tags=["Mandiri"])
