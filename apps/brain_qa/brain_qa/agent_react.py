@@ -766,7 +766,10 @@ def run_react(
     _image_nouns = ("gambar", "foto", "ilustrasi", "image", "picture", "visual", "artwork", "poster", "lukisan", "desain")
     _has_verb = any(v in _q_lower for v in _image_verbs)
     _has_noun = any(n in _q_lower for n in _image_nouns)
+    import logging as _log_fp
+    _log_fp.getLogger(__name__).warning(f"[ImageFastPath] check q={_q_lower[:80]!r} has_verb={_has_verb} has_noun={_has_noun}")
     if _has_verb and _has_noun:
+        _log_fp.getLogger(__name__).warning("[ImageFastPath] TRIGGERED, calling text_to_image")
         try:
             from .agent_tools import call_tool as _call_tool
             # Prompt untuk SDXL: question asli user (SDXL pakai English best tapi juga paham ID sederhana)
