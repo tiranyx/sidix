@@ -159,12 +159,10 @@ function applyI18n(): void {
   // Mobile nav
   const mobChat = document.getElementById('mob-label-chat');
   const mobSettings = document.getElementById('mob-label-settings');
-  const mobContrib = document.getElementById('mob-label-contrib');
   const mobAbout = document.getElementById('mob-label-about');
   const mobAuth = document.getElementById('mob-label-auth');
   if (mobChat) mobChat.textContent = t('chat');
   if (mobSettings) mobSettings.textContent = t('settings');
-  if (mobContrib) mobContrib.textContent = t('mobContrib');
   if (mobAbout) mobAbout.textContent = t('mobAbout');
   if (mobAuth) mobAuth.textContent = t('signIn');
 
@@ -442,7 +440,7 @@ document.getElementById('mob-nav-auth')?.addEventListener('click', () => {
 const mobNavItems = ['mob-nav-chat', 'mob-nav-settings'] as const;
 
 function setMobileActive(activeId: string) {
-  ['mob-nav-chat', 'mob-nav-about', 'mob-nav-contrib', 'mob-nav-settings', 'mob-nav-auth'].forEach(id => {
+  ['mob-nav-chat', 'mob-nav-about', 'mob-nav-settings', 'mob-nav-auth'].forEach(id => {
     const btn = document.getElementById(id);
     if (!btn) return;
     if (id === activeId) {

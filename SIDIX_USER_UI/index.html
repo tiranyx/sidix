@@ -229,12 +229,6 @@
               <i data-lucide="info" class="w-3 h-3"></i>
               <span id="label-about">Tentang SIDIX</span>
             </button>
-
-            <!-- Gabung Kontributor -->
-            <button id="btn-contributor" class="contrib-pill hidden md:flex" title="Gabung sebagai kontributor">
-              <i data-lucide="users" class="w-3 h-3"></i>
-              <span id="label-contrib">Gabung Kontributor</span>
-            </button>
           </div>
 
           <!-- CENTER: Sign In / Sign Up pill + quota badge -->
@@ -391,7 +385,8 @@
             </div>
 
             <p class="text-[10px] text-center text-parchment-600 mt-1.5 uppercase tracking-widest font-medium select-none">
-              SIDIX v1.0 · Self-hosted · Free
+              SIDIX v1.0 · Self-hosted · Free ·
+              <button id="btn-contributor" class="underline underline-offset-2 hover:text-parchment-400 transition-colors"><span id="label-contrib">Gabung Kontributor</span></button>
             </p>
           </div>
         </footer>
@@ -479,13 +474,6 @@
           aria-label="Tentang SIDIX">
           <i data-lucide="info" class="w-5 h-5"></i>
           <span class="text-[10px] font-medium" id="mob-label-about">Tentang</span>
-        </button>
-
-        <button id="mob-nav-contrib"
-          class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all text-parchment-500 hover:text-parchment-300"
-          aria-label="Gabung Kontributor">
-          <i data-lucide="users" class="w-5 h-5"></i>
-          <span class="text-[10px] font-medium" id="mob-label-contrib">Kontributor</span>
         </button>
 
         <button id="mob-nav-settings"
