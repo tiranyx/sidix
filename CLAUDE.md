@@ -155,6 +155,44 @@ brain/manifest.json            ← konfigurasi corpus path
 
 ---
 
+## 🧬 IDENTITAS SIDIX (LOCK — 2026-04-19)
+
+SIDIX **BUKAN** sekadar RAG/retrieval dari corpus. SIDIX adalah **LLM generative yang tumbuh dan menjadi AI agent**. Tiga layer arsitektur yang semua dijalankan OWN STACK (standing alone):
+
+### Layer 1 — LLM Generative (core, otak)
+- **Model**: Qwen2.5-7B-Instruct base + LoRA adapter SIDIX (fine-tuned own).
+- **Lokasi**: `/opt/sidix/sidix-lora-adapter/` (symlinked ke `apps/brain_qa/models/`).
+- **Cara kerja**: generate jawaban token-by-token via `local_llm.generate_sidix()`. Jawaban hasil PREDIKSI model, bukan copy-paste corpus.
+- **Penting**: kalau corpus kosong, SIDIX tetap bisa menjawab dari bobot LoRA + base Qwen — karena ini **LLM generatif**, bukan search engine.
+
+### Layer 2 — RAG + Agent Tools (sensory + reasoning)
+- **RAG**: `search_corpus` (BM25), `read_chunk`, `list_sources` — memberi konteks faktual ke LLM untuk mengurangi halusinasi, menjamin sanad.
+- **Agent tools** (17 aktif 2026-04-19): `web_fetch`, `web_search`, `code_sandbox`, `pdf_extract`, `calculator`, `workspace_*`, `roadmap_*`, `orchestration_plan`, dll.
+- **ReAct loop** (`agent_react.py`): LLM memilih tool → eksekusi → observation → refine jawaban. Loop ini yang bikin SIDIX jadi **AI AGENT**, bukan chatbot statis.
+- Tools TIDAK menggantikan generative capability — mereka memperkaya konteks supaya generative output akurat + terverifikasi.
+
+### Layer 3 — Growth Loop (tumbuh mandiri)
+- **LearnAgent** — fetch 50+ open data source harian (arXiv/Wikipedia/MusicBrainz/GitHub/Quran) → corpus queue.
+- **daily_growth** 7-fase (SCAN→RISET→APPROVE→TRAIN→SHARE→REMEMBER→LOG).
+- **knowledge_gap_detector** — deteksi low-confidence, trigger autonomous_researcher.
+- **corpus_to_training + auto_lora** — pair baru → JSONL → LoRA retrain (Kaggle/GPU) → adapter baru deploy.
+- **Hasil**: tiap kuartal model SIDIX lebih pintar dari kuartal sebelumnya. Bukan snapshot, tapi makhluk hidup yang belajar.
+
+### Salah kaprah yang HARUS dihindari
+- ❌ "SIDIX cuma RAG" — SALAH. RAG layer 2, bukan inti.
+- ❌ "Kalau corpus kosong SIDIX tidak bisa jawab" — SALAH. LoRA+base model generate sendiri.
+- ❌ "Tools menggantikan LLM" — SALAH. Tools memberi data, LLM tetap yang reasoning + generate.
+- ❌ "SIDIX chatbot biasa" — SALAH. ReAct loop = agent, bukan chatbot.
+- ❌ "Modelnya statis" — SALAH. Growth loop retrain LoRA periodik.
+
+### Implikasi aturan
+- Frontend/UX boleh fokus chat, tapi backend WAJIB pertahankan ReAct + generative + growth loop.
+- Tambah tool = augment agent, bukan ganti LLM.
+- Audit kualitas jawaban SIDIX = evaluasi generative output, bukan precision RAG.
+- Setiap improvement LoRA → note di `research_notes/` + update `vision_tracker.py`.
+
+---
+
 ## 🔒 UI LOCK — `app.sidixlab.com` (2026-04-19)
 
 Tampilan chatboard app.sidixlab.com **DIKUNCI** versi 2026-04-19. Jangan ubah struktur kecuali user meminta eksplisit.

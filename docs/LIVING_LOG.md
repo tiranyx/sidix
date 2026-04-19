@@ -2821,3 +2821,13 @@ promosi dirinya sendiri.
 - NOTE: `brain/public/research_notes/158_closure_sprint_2026_04_19_handoff_inventory.md` — closure + next-step default.
 - Commits hari ini (terakhir): 2897582 → fddf66d.
 - Next sprint (agent sesi berikut): baca `HANDOFF_2026-04-19.md` → pilih Plan A/B/C/D/E → eksekusi. Default: Plan E P1 concept_graph.
+
+## 2026-04-19 (klarifikasi identitas) — SIDIX = 3-layer, bukan cuma RAG
+
+- CLARIFICATION: User tegaskan SIDIX bukan hanya retrieval corpus — tetap LLM generative yang tumbuh jadi AI agent. Saya klarifikasi arsitektur 3-layer: Layer 1 LLM Qwen+LoRA (generative core), Layer 2 RAG+tools+ReAct (sensory+reasoning, 17 tool aktif), Layer 3 LearnAgent+daily_growth+auto_lora (growth loop autonomous retrain).
+- DOC: `CLAUDE.md` tambah section "IDENTITAS SIDIX" (lock) — penjelasan 3-layer + salah kaprah yang harus dihindari.
+- DOC: `docs/SIDIX_CAPABILITY_MAP.md` tambah section "Identitas SIDIX" di atas "Prinsip standing alone".
+- DOC: `docs/HANDOFF_2026-04-19.md` tambah section 4a (dimana jalanin shell command — di terminal/SSH/editor, dengan equivalent PowerShell) + section 4.5 (arsitektur 3-layer untuk agent berikut).
+- NOTE: `brain/public/research_notes/159_identitas_sidix_3_layer_bukan_rag.md` — catatan lengkap 3-layer + evaluasi yang benar + sanad kode per-layer.
+- MEMORY: Update `project_overview.md` dengan arsitektur 3-layer (anti-drift sesi berikut).
+- ANSWER user pertanyaan teknis: `cat docs/*.md` dan `tail -80` adalah shell command — dijalankan di terminal bash/zsh/PowerShell/Git Bash dari working directory repo, atau di VPS via SSH. Alternatif: buka file langsung di VS Code.

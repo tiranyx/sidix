@@ -6,6 +6,23 @@ Update file ini SETIAP kali ada tool/kapabilitas baru dipasang atau di-enable. J
 
 ---
 
+## 🧬 Identitas SIDIX (3-layer, LOCK)
+
+SIDIX adalah **LLM generative** yang dilengkapi RAG + agent tools + autonomous growth. BUKAN search engine, BUKAN chatbot statis.
+
+1. **LLM core** (generative) — Qwen2.5-7B + LoRA SIDIX own-trained. Generate jawaban lewat prediksi token. Tetap jawab walau corpus kosong.
+2. **RAG + tools** (sensory + reasoning via ReAct) — memperkaya konteks generative dengan data corpus / web / komputasi / file. 17 tool aktif 2026-04-19.
+3. **Growth loop** (autonomous learning) — LearnAgent + daily_growth + knowledge_gap_detector + corpus_to_training + auto_lora. Model di-retrain periodik. Makin lama makin pintar.
+
+**Yang SALAH ketika desain fitur:**
+- Mengganti generative dengan tools (tools augment, bukan replace).
+- Anggap SIDIX "cuma RAG" — abaikan LoRA layer.
+- Snapshot model tanpa growth loop — itu bikin SIDIX mati.
+
+Detail teknis identitas ini di `CLAUDE.md` section "IDENTITAS SIDIX".
+
+---
+
 ## 🎯 Prinsip: STANDING ALONE (dari user, 2026-04-19)
 
 > "SIDIX harus standing alone, jadi punya modul, framework dan tools sendiri authentic dan original punya SIDIX, bukan API orang."
