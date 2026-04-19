@@ -2696,6 +2696,47 @@ h1{{color:#0af}}p{{color:#aaa}}a{{color:#0af}}</style></head>
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    # ── /sidix/content/* ─ Content Designer untuk Threads Queue ───────────────
+
+    @app.post("/sidix/content/fill-week", tags=["Content"])
+    def content_fill_week():
+        """Generate 1 minggu konten beragam (21 post) → append ke growth_queue."""
+        try:
+            from .content_designer import fill_queue_for_week
+            return fill_queue_for_week()
+        except Exception as e:
+            import traceback
+            return {"ok": False, "error": str(e), "trace": traceback.format_exc()[-500:]}
+
+    @app.get("/sidix/content/queue-distribution", tags=["Content"])
+    def content_queue_dist():
+        """Distribusi tipe konten di growth_queue."""
+        try:
+            from .content_designer import get_queue_distribution
+            return {"ok": True, **get_queue_distribution()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/content/design-quote", tags=["Content"])
+    def content_design_quote():
+        """Generate satu post quote filosofi SIDIX."""
+        try:
+            from .content_designer import design_quote
+            piece = design_quote()
+            return {"ok": True, "piece": piece.to_queue_entry()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    @app.post("/sidix/content/design-invitation", tags=["Content"])
+    def content_design_invitation(variant: int = -1):
+        """Generate invitation post (acquisition focus)."""
+        try:
+            from .content_designer import design_invitation
+            piece = design_invitation(variant=variant)
+            return {"ok": True, "piece": piece.to_queue_entry()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     # ── /sidix/security/* ─ Multi-Layer Defense Inspection ────────────────────
 
     @app.get("/sidix/security/audit-stats", tags=["Security"])
