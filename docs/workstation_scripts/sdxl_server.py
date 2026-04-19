@@ -9,10 +9,13 @@ pipe = StableDiffusionXLPipeline.from_pretrained(
     "stabilityai/stable-diffusion-xl-base-1.0",
     torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
 )
-# Gunakan sequential offload untuk stabilitas lintas-request (hindari device mismatch bug)
-pipe.enable_sequential_cpu_offload()
-pipe.enable_attention_slicing()
-pipe.enable_vae_tiling()
+# Scheduler cepat: DPM++ 2M karya konvergen di 15 steps (vs 25-50 default)
+from diffusers import DPMSolverMultistepScheduler
+pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config, use_karras_sigmas=True, algorithm_type="dpmsolver++")
+# Pindah full ke GPU + attention slicing untuk fit VRAM 6GB di 512x512
+pipe = pipe.to("cuda")
+pipe.enable_attention_slicing("max")
+pipe.vae.enable_tiling()
 print("Ready.")
 
 app = FastAPI()

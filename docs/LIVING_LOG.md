@@ -3115,3 +3115,29 @@ Konteks: Budget Rp 300-600k approved. Laptop ASUS TUF Gaming A15 FA506QM ada RTX
     3. Google Cloud Console > OAuth Client: Authorized redirect URIs include https://<project>.supabase.co/auth/v1/callback, Authorized JS origins include https://app.sidixlab.com
   * PRIORITAS cek: #3 Google Cloud Console redirect URI (paling sering hang root cause).
 - WORKAROUND sementara: refresh browser -> quota guest 30x cukup untuk demo, atau pakai Magic Link email (bukan Google OAuth).
+
+## 2026-04-20 (beta UX tuning + OAuth Google Cloud setup)
+
+### Image gen speed tuning
+- ISSUE: sequential_cpu_offload = 201s per 768x768 20 steps (3x slower dari 65s sebelumnya dengan model_cpu_offload). UX terlalu lambat untuk beta.
+- FIX sdxl_server.py: ganti ke full GPU (pipe.to('cuda')) + DPMSolverMultistepScheduler (DPM++ 2M Karras) + attention_slicing('max') + vae.enable_tiling(). Target: fit 6GB VRAM di 512x512 tanpa device mismatch bug.
+- Default fast-path di agent_react.py: 512x512 20->15 steps. Target <30s per image di RTX 3060.
+- Copy script updated ke docs/workstation_scripts/sdxl_server.py untuk handoff.
+
+### OAuth Google Cloud Console setup (done)
+- Project SIDIX dibuat di Google Cloud Console.
+- OAuth consent screen configured (External, app name SIDIX).
+- OAuth Client 'SIDIX Web' dibuat dengan:
+  * Authorized JS origins: https://app.sidixlab.com
+  * Authorized redirect URIs: https://fkgnmrnckcnqvjsyunla.supabase.co/auth/v1/callback
+- Test user fahmiwol@gmail.com ditambahkan di Audience (sementara app mode Testing).
+- Client ID + Client Secret paste ke Supabase Google provider -> Save.
+- SUPABASE URL Configuration fixed: Site URL localhost:3000 -> https://app.sidixlab.com, Redirect URLs 5 entries added.
+- STATUS: settings baru save, menunggu propagate (5 menit - beberapa jam per warning Google). Kalau masih stuck setelah propagate, butuh cek DevTools console untuk error terselubung.
+- TODO: user ROTATE Client Secret (sudah exposed di chat).
+
+### Beta launch infra status live
+- Tunnel: https://scribble-trimness-alike.ngrok-free.dev (persistent URL dengan authtoken)
+- VPS env SIDIX_IMAGE_GEN_URL re-confirmed setelah laptop restart
+- tools_available=19, corpus=1182, model_ready=true
+- Laptop SDXL + ngrok di-restart setelah user shutdown/suspend sebelumnya
