@@ -6,13 +6,15 @@ Proyek: **SIDIX / Mighan Model**
 
 ## 📖 BACA DULU SEBELUM MULAI (SSOT)
 
-Sebelum kerja apapun, baca 3 file ini berurutan (cegah amnesia + repeat work):
+Urutan wajib sebelum kerja apapun:
 
-1. **`docs/SIDIX_BIBLE.md`** — konstitusi hidup (4 pilar identitas, IHOS,
-   4-label epistemik, Maqashid filter, sanad-required, trajectory mandiri,
-   parity target GPT/Claude/ByteDance/Gemini)
-2. **`docs/SIDIX_CHECKPOINT_<latest>.md`** — snapshot state + queue
-3. **`docs/LIVING_LOG.md`** (tail 50 lines) — apa yang baru dikerjakan
+1. **`CLAUDE.md`** (file ini) — aturan permanen + UI LOCK + IDENTITAS SIDIX.
+2. **`docs/DEVELOPMENT_RULES.md`** — aturan mengikat untuk agent eksternal + protocol self-development SIDIX. **Ini harus dipatuhi, bukan sekadar dibaca.**
+3. **`docs/SIDIX_CAPABILITY_MAP.md`** — SSoT kapabilitas (apa yang ada, belum wired, belum ada).
+4. **`docs/HANDOFF_<terbaru>.md`** — strategic handoff.
+5. **`docs/INVENTORY_<terbaru>.md`** — teknis detail + path.
+6. **`docs/SIDIX_BIBLE.md`** — konstitusi 4 pilar.
+7. **`tail -100 docs/LIVING_LOG.md`** — update terbaru.
 
 Kalau mau bikin research note baru, cek dulu nomor terakhir di
 `brain/public/research_notes/`. Topik mirip note existing (overlap ≥0.55) →

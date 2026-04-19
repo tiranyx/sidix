@@ -2831,3 +2831,12 @@ promosi dirinya sendiri.
 - NOTE: `brain/public/research_notes/159_identitas_sidix_3_layer_bukan_rag.md` — catatan lengkap 3-layer + evaluasi yang benar + sanad kode per-layer.
 - MEMORY: Update `project_overview.md` dengan arsitektur 3-layer (anti-drift sesi berikut).
 - ANSWER user pertanyaan teknis: `cat docs/*.md` dan `tail -80` adalah shell command — dijalankan di terminal bash/zsh/PowerShell/Git Bash dari working directory repo, atau di VPS via SSH. Alternatif: buka file langsung di VS Code.
+
+## 2026-04-19 (governance) — DEVELOPMENT_RULES.md + note 160
+
+- DOC: `docs/DEVELOPMENT_RULES.md` (BARU) — aturan mengikat lintas-sesi. 3 bagian: Part A (12 rules agent eksternal), Part B (10 rules SIDIX self-development), Part C (quick reference). SSoT untuk governance pengembangan.
+- DOC: `CLAUDE.md` — update section "BACA DULU SEBELUM MULAI" dengan urutan 7 file wajib (termasuk DEVELOPMENT_RULES.md di posisi #2).
+- NOTE: `brain/public/research_notes/160_development_rules_agent_eksternal_dan_self.md` — ringkasan 22 rules + rationale gabungan 2 audience + backlog implementasi (B4-B9 butuh kode tambahan).
+- MEMORY: Update `partner_rules.md` — tambah pointer ke `docs/DEVELOPMENT_RULES.md` sebagai SSoT + ringkas identitas SIDIX 3-layer.
+- COVERAGE: Rules mencakup — baca konteks, standing-alone, UI LOCK, anti-duplicate, catat wajib, output epistemic, security audit, delegasi subagent, verifikasi klaim, commit etiquette, decision log. Untuk SIDIX sendiri: daily growth cycle, whitelist/blacklist domain, validasi konten, self-evaluation loop, auto-retrain pipeline, self-evolving roadmap, guardrails self-modify, escalation criteria, identity preservation.
+- IMPLIKASI: Backlog protocol yang belum terimplementasi di kode (B4-B9) dicatat eksplisit di note 160 untuk plan sprint berikut.
