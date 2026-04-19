@@ -2995,3 +2995,17 @@ berikutnya tinggal:
   cat docs/HANDOFF_2026-04-19.md  # visi + strategic
   cat docs/INVENTORY_2026-04-19.md  # detail teknis
   pilih Plan A/B/C/D, eksekusi, catat
+
+## 2026-04-19 (Sprint 1 closure + Sprint 3 research takeover)
+
+- DEPLOY: PR T1.2 Cursor merged to main (366c5eb). Claude merge main -> claude branch (b1ed823), resolve conflicts (CLAUDE.md ordered list numbering + LIVING_LOG keep both + research notes 157/161/162 keep Claude version with sanad_tier=primer frontmatter added).
+- DEPLOY: Server /opt/sidix switched to claude/determined-chaum-f21c81 branch. Re-index corpus: chunks=1131, sanad_tier distribution: primer=25, peer_review=9, unknown=1097.
+- STATE LIVE: tools_available=18, corpus_doc_count=1157, model_ready=true. concept_graph endpoint tested OK (sanad concept -> 85 mentions, hop1 Persona/RAG/Hafidz/IHOS/Maqasid).
+- DECISION: Antigravity PET error blocking, Claude takeover 4 research task.
+- NOTE 170 (peer_review): GPU provider comparison. Top1 RunPod Serverless 4090 (.34/jam, Singapore, per-detik billing, -40/2mgg testing). Top2 Modal. Reject Lambda (no Asia) + CoreWeave (enterprise overhead) + Biznet (mahal MVP).
+- NOTE 171 (peer_review): Image model comparison. Top1 FLUX.1-schnell (Apache-2.0, quality tertinggi, text rendering kaligrafi). Top2 SDXL 1.0 (LoRA ecosystem matang, fallback untuk fine-tune Nusantara). 10 prompt Nusantara benchmark proposed.
+- NOTE 172 (primer): Nusantara KB design untuk prompt enhancer. Schema JSON per-entry dengan visual_keywords + style_modifiers + cultural_context + sanad. 8 kategori, 50 entry phase 1, pipeline kurasi 3-phase. REKOMENDASI: lexicon terpisah dari IHOS CONCEPT_LEXICON.
+- NOTE 173 (peer_review): Image gen deployment pattern. Matrix skoring: Diffusers=4.80 (winner), ComfyUI=3.45, Cog=3.10, Custom=2.85. Pattern: Diffusers + FastAPI di Docker handler, RunPod serverless, integration native Python ke brain_qa.
+- DOC: docs/decisions/ADR_001_sprint3_image_gen_stack.md (BARU) - lock keputusan Sprint 3: RunPod 4090 + FLUX.1-schnell + Diffusers + Nusantara KB. Awaiting user approval.
+- UPDATE: DELEGATION_REGISTRY - R1-R4 status -> done (Claude takeover), ADR-001 added.
+- NEXT: user approve ADR -> Sprint 3 kickoff (week 1-4). Sprint 2 T2.1-T2.4 (math/data/plot/upload) bisa paralel via Cursor kapan saja.

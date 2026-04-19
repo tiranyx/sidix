@@ -14,10 +14,11 @@
 | T1.3 | Fix cron LearnAgent + corpus index | Claude | `claude/determined-chaum-f21c81` | ✅ live (commit 53ea97f, corpus 1149 docs) | — | — |
 | T1.4 backend | Endpoint `/concept_graph/query` | Claude | `claude/determined-chaum-f21c81` | ✅ live (commit 53ea97f) | — | — |
 | T1.4 frontend | Badge sanad tier di citations UI | Cursor | `cursor/sprint-2/t1.4-frontend-badge` | ⏳ pending (start setelah T1.2 merge) | — | — |
-| R1 | GPU provider comparison | Antigravity | `antigravity/sprint-1/research-gpu` | ⏳ pending | — | note 170 (target) |
-| R2 | SDXL vs FLUX.1 comparison | Antigravity | `antigravity/sprint-1/research-image-gen` | ⏳ pending | — | note 171 (target) |
-| R3 | Nusantara KB schema design | Antigravity | `antigravity/sprint-1/research-nusantara-kb` | ⏳ pending | — | note 172 (target) |
-| R4 | ComfyUI vs Diffusers deployment | Antigravity | `antigravity/sprint-1/research-deployment` | ⏳ pending | — | note 173 (target) |
+| R1 | GPU provider comparison | Claude (Antigravity PET error, di-takeover) | `claude/determined-chaum-f21c81` | ✅ done | — | note 170 |
+| R2 | SDXL vs FLUX.1 comparison | Claude (takeover) | `claude/determined-chaum-f21c81` | ✅ done | — | note 171 |
+| R3 | Nusantara KB schema design | Claude (takeover) | `claude/determined-chaum-f21c81` | ✅ done | — | note 172 |
+| R4 | ComfyUI vs Diffusers deployment | Claude (takeover) | `claude/determined-chaum-f21c81` | ✅ done | — | note 173 |
+| ADR-001 | Sprint 3 Image Gen Stack decision | Claude | `claude/determined-chaum-f21c81` | ✅ done, awaiting user approval | — | `docs/decisions/ADR_001_sprint3_image_gen_stack.md` |
 
 ---
 
