@@ -3099,3 +3099,19 @@ Konteks: Budget Rp 300-600k approved. Laptop ASUS TUF Gaming A15 FA506QM ada RTX
   * Tunnel ngrok = jembatan VPS -> laptop HANYA saat image gen. Sisa waktu laptop idle.
 - EXIT strategy: kalau budget Rp 300-400k/bulan tersedia, deploy SDXL di RunPod Docker dengan Dockerfile di docs/workstation_scripts/, ganti SIDIX_IMAGE_GEN_URL env var -> RunPod endpoint, laptop bisa dimatikan. Scaling otomatis via serverless worker.
 - Fase beta sekarang: laptop + ngrok = Rp 0 = perfect untuk validasi demand sebelum commit budget cloud.
+
+## 2026-04-20 (quota bump + OAuth debug checklist)
+
+- FIX quota user habis (3/hari guest limit hit saat testing beta):
+  * Delete file .data/quota/quota_YYYY-MM-DD.json via rm
+  * Bump QUOTA_LIMITS di token_quota.py: guest 3->30, free 10->50 (sementara untuk fase beta, rollback nanti kalau abuse terdeteksi)
+  * Sponsored 100, admin 9999 tetap
+  * pm2 restart sidix-brain
+- DEBUG Google OAuth lambat 'Mengarahkan ke Google...' stuck:
+  * Frontend code OK: signInWithOAuth provider='google', redirectTo=window.location.href=https://app.sidixlab.com, queryParams access_type=offline prompt=consent.
+  * Root cause harus dicek di Supabase dashboard (akses user, bukan VPS):
+    1. Auth > Providers > Google: enable toggle + Client ID + Client Secret terisi
+    2. Auth > URL Configuration: Site URL = https://app.sidixlab.com, Redirect URLs include https://app.sidixlab.com/** dan /*
+    3. Google Cloud Console > OAuth Client: Authorized redirect URIs include https://<project>.supabase.co/auth/v1/callback, Authorized JS origins include https://app.sidixlab.com
+  * PRIORITAS cek: #3 Google Cloud Console redirect URI (paling sering hang root cause).
+- WORKAROUND sementara: refresh browser -> quota guest 30x cukup untuk demo, atau pakai Magic Link email (bukan Google OAuth).
