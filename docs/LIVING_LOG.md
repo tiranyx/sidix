@@ -2867,3 +2867,12 @@ promosi dirinya sendiri.
 - POINTER: `CLAUDE.md` update urutan baca — NORTH_STAR.md jadi #2 wajib.
 - LAUNCH STRATEGY: v0.2 (Juni 2026) internal+early users, v0.3–v0.8 rilis bulanan, v1.0 public beta Desember 2026, v2.0 self-evolving 2027Q2, v3.0 hafidz network 2028Q1.
 - KRITERIA lock: tidak boleh ubah North Star / 3 keunggulan / standing-alone / urutan sprint 1-3 / UI chatboard / arsitektur Brain+Hands+Memory tanpa ADR + approval user.
+
+## 2026-04-19 (Sprint 1 progress + multi-agent governance) — 3 tool + workflow
+
+- IMPL T1.1 (commit 6b38731): `concept_graph` tool — reuse brain_synthesizer.build_knowledge_graph(), BFS multi-hop, summary mode + concept query mode.
+- OPS T1.3: Setup BRAIN_QA_ADMIN_TOKEN (48 hex) di server .env. Install cron LearnAgent daily 04:00 UTC + 04:30 UTC. Restart sidix-brain. Corpus indexer jalan: corpus_doc_count 0 -> 1149.
+- IMPL T1.4: Endpoint `GET /concept_graph/query?concept=&depth=&max_related=` di agent_serve.py — public read-only delegate ke tool concept_graph. Untuk future UI graph viewer.
+- DOC MULTI-AGENT: `docs/MULTI_AGENT_WORKFLOW.md` — koordinasi Claude/Cursor/Antigravity. Peran, branch strategy, PR workflow, anti-conflict rules. `docs/agent_tasks/` folder baru dengan SPRINT_1_CURSOR.md (T1.2 + T1.4 frontend + Sprint 2), SPRINT_1_ANTIGRAVITY.md (4 research task GPU/model/KB/deployment), SPRINT_1_CLAUDE.md (progress + upcoming).
+- STATE LIVE: tools_available=18, model_ready=true, corpus_doc_count=1149, cron aktif, admin token set.
+- NEXT: user copy-paste task file ke Cursor + Antigravity; Claude standby review PR + setup /workspace/upload endpoint + weekly audit.
