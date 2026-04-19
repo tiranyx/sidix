@@ -3192,3 +3192,47 @@ SIDIX bisa 'baca' data baru tiap hari (RAG growing), tapi bobot LoRA-nya tetap y
 - Fase Adolescent (Q4 2026-Q1 2027): SELF-EVOLVING SPIN + model merging + self-reward - INI fase autonomous training sesungguhnya
 
 Jadi SIDIX saat ini: 'makhluk yang belajar baca, belum bisa nulis ulang otaknya sendiri'. Autonomy real targetnya Q4 2026.
+
+## 2026-04-20 (killer offer strategy approved + auto-enhance prompt IMPL)
+
+### User directive (verbatim)
+Killer offers yang dibutuhkan:
+1. Gratis image gen, hasil relevan
+2. Bantu kerjaan agency kreatif harian (konten, dll)
+3. Image-to-video
+4. Multi-skill gambar sekelas GPT tanpa perlu prompt panjang
+
+### DOC: docs/decisions/ADR_002_killer_offer_strategy.md (BARU)
+Approved 2026-04-20. 5 killer offer ranked by ROI:
+- #1 Gratis image gen - DONE live
+- #2 Auto-enhance prompt - QUICK WIN this week
+- #3 Creative Kit templates (IG/reels/poster dimensi + style) - next week
+- #4 Image-to-video - Sprint 5
+- #5 Multi-skill (inpaint/style/upscale/rembg/face restore/IP-Adapter) - Sprint 5-6
+
+### IMPL Quick Win #2: Auto-enhance prompt (commit ini)
+- agent_react.run_react() fast-path sekarang pakai _enhance_prompt() helper
+- Strip leading verbs ID/EN (bikin/buat/gambar/etc)
+- Detect context keywords -> append style hints:
+  * masjid/islam/ramadhan -> warm golden hour, Islamic architectural detail
+  * batik/tenun -> traditional Indonesian textile, vibrant natural dye
+  * candi/borobudur -> ancient stone, volcanic landscape, misty morning
+  * pantai/laut/sunset -> golden hour, cinematic seascape
+  * makanan/kuliner -> food photography overhead shot
+  * always append: professional photography, 4k, cinematic, sharp focus
+- Log enhanced prompt ke pm2 biar kita bisa audit kualitas
+- User experience: tulis 'bikin gambar masjid demak subuh' -> SDXL dapat 'masjid demak subuh, warm golden hour light, serene spiritual atmosphere, Islamic architectural details, professional photography, 4k high detail, cinematic composition, sharp focus'
+
+### Narasi marketing (dari ADR)
+"SIDIX - AI agent asli Indonesia. Gratis. Bisa gambar. Paham Nusantara."
+Pain kompetitor: ChatGPT /bulan image limited, Midjourney  prompt rumit, Canva  kualitas limited, semuanya generik tidak paham kultural.
+Value SIDIX: gratis selamanya + prompt pendek pro output + paham masjid demak batik parang rumah gadang gudeg.
+
+### Strategic order (lock)
+Breadth dulu (killer offer atraksi user) -> Depth autonomy (self-train retain + improve). Rationale: self-train tanpa user = optimasi otak tanpa penonton.
+
+### Success metrics to track weekly (beta)
+- DAU target 100 dalam 1 bulan
+- Image gen per user per week target >5
+- Retention 7-day target >30%
+- Threads viral coefficient

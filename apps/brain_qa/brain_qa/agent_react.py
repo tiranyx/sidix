@@ -772,10 +772,42 @@ def run_react(
         _log_fp.getLogger(__name__).warning("[ImageFastPath] TRIGGERED, calling text_to_image")
         try:
             from .agent_tools import call_tool as _call_tool
-            # Prompt untuk SDXL: question asli user (SDXL pakai English best tapi juga paham ID sederhana)
+
+            # ── Auto-enhance prompt pendek -> SDXL-friendly detail ──────────
+            # User tinggal tulis intent pendek ('konten ramadhan masjid'),
+            # SIDIX enrich dengan style + lighting + quality keywords.
+            def _enhance_prompt(user_q: str) -> str:
+                q = user_q.strip()
+                # Strip leading verbs biar prompt fokus ke subject
+                for verb in ("bikin gambar ", "buat gambar ", "buatkan gambar ", "generate gambar ",
+                             "gambarkan ", "render gambar ", "lukiskan ", "bikin foto ", "buat foto ",
+                             "bikin ilustrasi ", "buat ilustrasi ", "generate image ", "create image ",
+                             "bikin ", "buat ", "gambar ", "foto ", "ilustrasi "):
+                    if q.lower().startswith(verb):
+                        q = q[len(verb):].strip()
+                        break
+                # Deteksi kata kunci konteks untuk style hint
+                ql = q.lower()
+                style_hints = []
+                if any(k in ql for k in ("masjid", "islam", "quran", "ramadhan", "idul", "kaligrafi")):
+                    style_hints.append("warm golden hour light, serene spiritual atmosphere, Islamic architectural details")
+                if any(k in ql for k in ("batik", "tenun", "songket", "ulos")):
+                    style_hints.append("traditional Indonesian textile detail, rich cultural pattern, vibrant natural dye colors")
+                if any(k in ql for k in ("candi", "borobudur", "prambanan", "stupa")):
+                    style_hints.append("ancient stone carving, volcanic landscape backdrop, misty morning, 9th century temple")
+                if any(k in ql for k in ("pantai", "laut", "sunset", "sunrise")):
+                    style_hints.append("golden hour, dramatic sky, cinematic seascape")
+                if any(k in ql for k in ("makanan", "kuliner", "rendang", "nasi", "sate", "soto")):
+                    style_hints.append("food photography, overhead shot, natural lighting, appetizing detail")
+                # Quality baseline (selalu)
+                style_hints.append("professional photography, 4k high detail, cinematic composition, sharp focus")
+                return f"{q}, {', '.join(style_hints)}"
+
+            enhanced = _enhance_prompt(question)
+            _log_fp.getLogger(__name__).warning(f"[ImageFastPath] enhanced prompt: {enhanced[:150]!r}")
             _result = _call_tool(
                 tool_name="text_to_image",
-                args={"prompt": question, "steps": 15, "width": 512, "height": 512},
+                args={"prompt": enhanced, "steps": 15, "width": 512, "height": 512},
                 session_id=session_id,
                 step=1,
                 allow_restricted=False,
