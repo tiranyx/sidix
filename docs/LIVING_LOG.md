@@ -2722,3 +2722,63 @@ Can I contribute / Indonesian language support.
 - Setiap progress dicatat (Aturan #6 MANDATORY CATAT)
 - GA config anonymize_ip (Aturan #7 Security privacy)
 - Tidak ekspose owner real name (Mighan Lab organization)
+
+
+## 2026-04-19 - Social Media Marketing + Learning APIs + Sub-Agent Architecture
+
+### Mandate user
+Tambah social media marketing untuk jangkau dunia + tambah open-source API
+agar SIDIX belajar mandiri (visual, audio, coding) + rancang internal
+sub-agent (learn, promote, develop, monitor, teach, guard) + elaborate SIDIX
+promosi dirinya sendiri.
+
+### Research Notes Baru
+- [DOC] `brain/public/research_notes/151_social_media_marketing_strategy_sidix.md`
+  Strategi 8 platform (Threads, Twitter/X, LinkedIn, YouTube, TikTok/Reels,
+  Mastodon, HN/Reddit, Discord), content calendar, KPI target 1/3 bulan,
+  PromoteAgent pseudocode, prinsip "show don't tell + epistemic content".
+- [DOC] `brain/public/research_notes/152_open_source_apis_learning_sources_sidix.md`
+  50+ API sumber belajar:
+  (A) Visual: Pinterest, Behance, Unsplash, Pexels, Wikimedia, Sketchfab,
+      Blender docs, Google Fonts, Shutterstock/Adobe metadata, Google Vision,
+      Figma, Canva Design School.
+  (B) Audio: Spotify, SoundCloud, MusicBrainz, Last.fm, Whisper (open-source),
+      FMA, Jamendo, Bandcamp Daily.
+  (C) Coding: GitHub API, HuggingFace API, roadmap.sh, DevDocs, Stack Overflow
+      dump, MDN, Papers With Code, arXiv.
+  (D) Islam: Quran.com API v4, Hadith API, Perseus Digital Library,
+      Internet Archive.
+  (E) Data: NASA Open APIs, World Bank, OpenStreetMap, FRED, CommonCrawl.
+  Prioritas P1 (arXiv, Wikipedia, Quran) s.d. P4 (3D/science).
+- [DOC] `brain/public/research_notes/153_sidix_internal_subagents_architecture.md`
+  Arsitektur 6 sub-agent: LearnAgent, PromoteAgent, DevelopAgent,
+  MonitorAgent, TeachAgent, GuardAgent + OrchestratorAgent koordinasi.
+  SIDIX Autonomous Growth Loop (SAGL) diagram. Fase 1-6 implementasi.
+  Analogi usul fiqh: ikhtisas + syura + hisbah + ijtihad.
+
+### Implementasi Python
+- [IMPL] `apps/brain_qa/brain_qa/connectors/__init__.py`
+  Package baru connectors: ArxivConnector, WikipediaConnector,
+  MusicBrainzConnector, GitHubTrendingConnector, QuranConnector.
+- [IMPL] `apps/brain_qa/brain_qa/connectors/arxiv_connector.py`
+  arXiv API (cs.AI/CL/LG/CV/stat.ML), XML Atom parser, polite 0.4s/req.
+- [IMPL] `apps/brain_qa/brain_qa/connectors/wikipedia_connector.py`
+  Wikipedia API EN+ID, get_summary + search, CC BY-SA 4.0.
+- [IMPL] `apps/brain_qa/brain_qa/connectors/musicbrainz_connector.py`
+  MusicBrainz API (CC0), artist/recording/genre search, 1.1s/req.
+- [IMPL] `apps/brain_qa/brain_qa/connectors/github_connector.py`
+  GitHub REST API, trending repos (created + sort star), optional GITHUB_TOKEN.
+- [IMPL] `apps/brain_qa/brain_qa/connectors/quran_connector.py`
+  Quran.com API v4, ayat + terjemahan Mustafa Khattab, semantic search.
+- [IMPL] `apps/brain_qa/brain_qa/learn_agent.py`
+  LearnAgent utama: state/dedup/corpus queue/auto note generator/
+  process_corpus_queue() → build_index(). 5 default sources aktif.
+  MIN_INTERVAL_SEC=3600 (anti-spam).
+- [UPDATE] `apps/brain_qa/brain_qa/agent_serve.py`
+  3 endpoint admin baru: GET /learn/status, POST /learn/run, POST /learn/process_queue.
+
+### Compliance Aturan #6 + #7
+- Setiap progress tercatat (Aturan #6 MANDATORY CATAT)
+- Connector tidak hardcode key/token (pakai os.getenv)
+- Endpoint /learn/* dilindungi admin token
+- Tidak ada PII/IP/secret di file baru
