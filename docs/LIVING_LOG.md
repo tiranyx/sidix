@@ -2848,3 +2848,12 @@ promosi dirinya sendiri.
 - POINTER: Update `CLAUDE.md` urutan baca (9 file, roadmap jadi #3). Update `docs/SIDIX_CAPABILITY_MAP.md` tambah ringkasan roadmap 4 stage. Update `docs/HANDOFF_2026-04-19.md` tambah Plan F (default eksekusi Baby Sprint 1).
 - PREKONSEPSI dihindari: user mungkin berpikir SIDIX mirip GPT/Claude — dijawab bahwa foundation sama (Transformer, next-token, ReAct, RAG) tapi 8 aspek berbeda struktural (bukan sekadar prompt). Dokumen 161 + roadmap jadi referensi authoritative.
 - NEXT: Baby Sprint 1 (Plan F) — wire audio_capability + concept_graph + cron LearnAgent + index corpus. Target 2 minggu, tools 17 -> 19, corpus > 100 doc.
+
+## 2026-04-19 (framework) — Brain+Hands+Memory + peta 10 kemampuan terintegrasi ke Vision+PRD+Roadmap
+
+- NOTE: `brain/public/research_notes/162_framework_brain_hands_memory_peta_kemampuan_sidix.md` (BARU). Membongkar mitos "satu model monster" — GPT/Claude/Gemini adalah orkestrator. Framework Brain+Hands+Memory selaras IHOS. Peta 10 kemampuan × pendekatan × tahap roadmap (jawab+ide, image gen, coding dasar, coding serius, app UI, game 2D, matematika, video ringan, video asli, knowledge 3-lapis).
+- INTEGRATE: `docs/01_vision_mission.md` — rewrite total dengan framework Brain+Hands+Memory, 3 keunggulan struktural (transparansi epistemologis + kedaulatan data + spesialisasi kultural). Tambah pointer ke roadmap + rules + capability map + note 161-162.
+- INTEGRATE: `docs/02_prd.md` — tambah section 0 "Peta kemampuan SIDIX (scope spec)" dengan tabel 10 kemampuan + status per 2026-04-19. Tambah non-goal: tidak pakai vendor AI API, tidak bikin satu model monster.
+- INTEGRATE: `docs/SIDIX_ROADMAP_2026.md` — tambah section "Framework arsitektural Brain+Hands+Memory" di atas 4-stage overview, jelaskan prinsip modular orkestrasi.
+- MITOS dibongkar: GPT/Claude/Gemini bukan satu model — mereka orkestrator panggil tool/model spesialis (DALL-E, Python, search, dll.). Implikasi untuk SIDIX: tidak perlu kejar skala parameter, kejar karakter + integrity.
+- DIFFERENSIATOR konkret: image prompt enhancer Nusantara (brain enrich prompt dengan konteks kultural sebelum SDXL) — tidak bisa ditiru GPT/Claude karena knowledge base Nusantara + sanad tidak mereka punya.

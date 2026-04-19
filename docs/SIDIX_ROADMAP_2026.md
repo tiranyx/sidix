@@ -12,6 +12,21 @@ Referensi konsep: `brain/public/research_notes/161_*.md`.
 
 ---
 
+## 🧠 Framework arsitektural: Brain + Hands + Memory
+
+Sebelum baca stage plan, pahami framework ini (detail di `brain/public/research_notes/162_*.md`):
+
+- **Brain** = LLM inti (Qwen+LoRA) — paham bahasa, reasoning, tahu kapan panggil siapa. Analog *akal* di IHOS.
+- **Hands** = Tools + model spesialis (image gen, VLM, coder, ASR, TTS, video pipeline) — brain panggil via ReAct. Analog *sanad* — validasi via alat.
+- **Memory** = RAG (BM25) + GraphRAG (graph ilmu) + Skill Library (Voyager-style). Analog *hifdz* terstruktur dengan sanad.
+
+**Prinsip (LOCK):**
+> Jangan jatuh cinta ide "satu model monster serbaguna". Jalan SIDIX adalah **modular orkestrasi + brain yang punya jati diri (IHOS)**. Keunggulan: transparansi epistemologis + kedaulatan data + spesialisasi kultural — tidak bisa ditawarkan big tech.
+
+Tiap stage memperluas salah satu atau lebih dari Brain/Hands/Memory.
+
+---
+
 ## 📊 Overview 4 stage
 
 | Stage | Periode target | Kapabilitas utama | Analogi |
