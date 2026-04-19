@@ -82,6 +82,90 @@
   }
   </script>
 
+  <!-- ═══ JSON-LD: Organization ═══ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Mighan Lab",
+    "url": "https://sidixlab.com",
+    "logo": "https://sidixlab.com/sidix-logo.svg",
+    "description": "Mighan Lab builds SIDIX — a self-hosted, open-source AI agent with Islamic epistemic integrity foundation.",
+    "foundingDate": "2026",
+    "sameAs": [
+      "https://github.com/fahmiwol/sidix",
+      "https://www.threads.com/@sidixlab"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "email": "contact@sidixlab.com",
+      "contactType": "customer support",
+      "availableLanguage": ["English", "Indonesian"]
+    }
+  }
+  </script>
+
+  <!-- ═══ JSON-LD: FAQ Page (rich snippet untuk Google Search) ═══ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is SIDIX?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "SIDIX is a self-hosted, open-source AI agent with epistemic integrity. It provides honest, cited, verifiable answers using RAG + BM25 retrieval, ReAct reasoning, and 5 distinct personas. 100% local inference — no cloud dependency, MIT licensed."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is SIDIX free to use?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. SIDIX is completely free and open-source under MIT license. Try 5 messages without signup at app.sidixlab.com. Fork, deploy, contribute — no hidden cost."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is SIDIX different from ChatGPT or Claude?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "SIDIX is standing-alone (deployable without internet), open-source (fork-able MIT), with cryptographic audit trail (CAS + Merkle ledger for sanad verification), built on Islamic epistemology foundation (IHOS framework), and commits to 4-label epistemic honesty (FACT/OPINION/SPECULATION/UNKNOWN) on every output."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I contribute to SIDIX?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Absolutely. SIDIX welcomes developers, researchers, and academics. Visit sidixlab.com, click 'Gabung Kontributor' or submit PRs to github.com/fahmiwol/sidix. Every contribution is cryptographically signed via sanad chain."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does SIDIX support Indonesian language?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes — SIDIX is optimized for Bahasa Indonesia as primary language, with English and Arabic support. Built by Mighan Lab for Indonesian + Islamic community globally."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ═══ PERFORMANCE HINTS ═══ -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com" />
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+  <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+
+  <!-- ═══ PWA MANIFEST ═══ -->
+  <link rel="manifest" href="/manifest.json" />
+
   <link rel="icon" type="image/svg+xml" href="/sidix-logo.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
