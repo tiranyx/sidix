@@ -22,16 +22,16 @@ Dokumen ini TIDAK ada detail teknis — itu di research note 168 + 169. Ini inde
 ### 1. Konten & Media Production
 | Agent | Input | Output | Status |
 |-------|-------|--------|--------|
-| `generate_content_plan` | niche, durasi, channel | kalender JSON + posting plan | ⏳ P0 |
-| `generate_copy` | topic, formula (AIDA/PAS/FAB), channel | 3 varian caption | ⏳ P0 |
+| `generate_content_plan` | niche, durasi, channel | kalender JSON + posting plan | ✅ LIVE (beta Sprint 4) |
+| `generate_copy` | topic, formula (AIDA/PAS/FAB), channel | 3 varian caption | ✅ LIVE (beta Sprint 4) |
 | `generate_video_script` | topic, duration (30s/60s/3min), hook style | script hook-pain-solution-CTA | ⏳ P1 |
 
 ### 2. Desain Grafis & Branding
 | Agent | Input | Output | Status |
 |-------|-------|--------|--------|
-| `generate_brand_kit` | business name, niche, vibe | markdown (palette+tone+archetype) + logo prompt | ⏳ P0 |
+| `generate_brand_kit` | business name, niche, vibe | markdown (palette+tone+archetype) + logo prompt | ✅ LIVE (beta Sprint 4) |
 | `text_to_image` | prompt | PNG via SDXL | ✅ LIVE |
-| `generate_thumbnail` | title, style | YT/IG thumbnail PNG dengan text overlay | ⏳ P0 |
+| `generate_thumbnail` | title, style | YT/IG thumbnail PNG dengan text overlay | ✅ LIVE (beta Sprint 4) |
 | `generate_feed_cohesive` | theme, n_posts | N images cohesive grid | ⏳ P1 |
 
 ### 3. Video & Editing
@@ -45,8 +45,8 @@ Dokumen ini TIDAK ada detail teknis — itu di research note 168 + 169. Ini inde
 ### 4. Marketing & Campaign Strategy
 | Agent | Input | Output | Status |
 |-------|-------|--------|--------|
-| `plan_campaign` | brief (budget/goal/audience) | strategy (AARRR funnel + channel mix + timeline) | ⏳ P0 |
-| `generate_ads` | product, platform (FB/Google/TikTok) | 3-5 ad copy + image prompts | ⏳ P0 |
+| `plan_campaign` | brief (budget/goal/audience) | strategy (AARRR funnel + channel mix + timeline) | ✅ LIVE (beta Sprint 4) |
+| `generate_ads` | product, platform (FB/Google/TikTok) | 3-5 ad copy + image prompts | ✅ LIVE (beta Sprint 4) |
 | `build_funnel` | product, target audience | awareness→consideration→conversion→retention stages | ⏳ P1 |
 
 ### 5. Produk & E-commerce
@@ -148,8 +148,8 @@ SIDIX output (1 click):
 
 | Status | Count |
 |--------|-------|
-| ✅ LIVE | 1 (text_to_image) |
-| ⏳ P0 (Sprint 4) | 6 |
+| ✅ LIVE | 7 (text_to_image + 6 P0 sprint 4) |
+| ⏳ P0 (Sprint 4) | 0 |
 | ⏳ P1 (Sprint 5) | 8 |
 | ⏳ P2 (Sprint 6) | 14 (9 + 5 dari 3D/Gaming) |
 | ⏳ P3 (Sprint 7+) | 8 (4 + 4 dari 3D/Gaming/video) |

@@ -120,6 +120,30 @@ _ORCH_META_RE = re.compile(
     r"fase\s+agen|rencana\s+orkestrasi|orchestration\s+plan)\b",
     re.IGNORECASE,
 )
+_COPY_RE = re.compile(
+    r"\b(copy|caption|iklan|ads copy|sales copy|aida|pas|fab)\b",
+    re.IGNORECASE,
+)
+_CONTENT_PLAN_CREATIVE_RE = re.compile(
+    r"\b(content plan|kalender konten|content planner|rencana konten)\b",
+    re.IGNORECASE,
+)
+_BRAND_KIT_RE = re.compile(
+    r"\b(brand kit|branding|brand identity|archetype brand|logo prompt)\b",
+    re.IGNORECASE,
+)
+_THUMBNAIL_RE = re.compile(
+    r"\b(thumbnail|yt cover|youtube cover|judul thumbnail)\b",
+    re.IGNORECASE,
+)
+_CAMPAIGN_RE = re.compile(
+    r"\b(campaign strategy|strategi campaign|rencana campaign|aarrr)\b",
+    re.IGNORECASE,
+)
+_ADS_GEN_RE = re.compile(
+    r"\b(generate ads|buat ads|iklan fb|iklan tiktok|iklan google)\b",
+    re.IGNORECASE,
+)
 
 
 def _effective_max_steps(question: str, max_steps: int | None) -> int:
@@ -145,6 +169,12 @@ def _observation_is_weak_corpus(obs: str) -> bool:
     if len(o) < 1600 and "ringkasan" not in o:
         return True
     return False
+
+
+def _extract_topic(question: str) -> str:
+    q = question.strip()
+    q = re.sub(r"^(tolong|please|bantu|buatkan|buat|generate|bikin)\s+", "", q, flags=re.IGNORECASE).strip()
+    return q or question.strip()
 
 
 def _rule_based_plan(
@@ -189,6 +219,88 @@ def _rule_based_plan(
                 "User minta rencana orkestrasi / multi-aspek. Bangun OrchestrationPlan.",
                 "orchestration_plan",
                 {"question": question, "persona": persona},
+            )
+
+        if _CONTENT_PLAN_CREATIVE_RE.search(question):
+            channel = "instagram"
+            ql = question.lower()
+            if "threads" in ql:
+                channel = "threads"
+            elif "tiktok" in ql:
+                channel = "tiktok"
+            return (
+                "User minta konten planner. Generate kalender konten langsung.",
+                "generate_content_plan",
+                {
+                    "niche": _extract_topic(question),
+                    "duration_days": 30,
+                    "channel": channel,
+                    "cadence_per_week": 5,
+                    "objective": "awareness",
+                },
+            )
+
+        if _BRAND_KIT_RE.search(question):
+            return (
+                "User minta brand kit. Generate identity kit (archetype, palette, tone, logo prompts).",
+                "generate_brand_kit",
+                {
+                    "business_name": "Brand SIDIX User",
+                    "niche": _extract_topic(question),
+                    "vibe": "modern, warm, trustworthy",
+                },
+            )
+
+        if _THUMBNAIL_RE.search(question):
+            return (
+                "User minta thumbnail generator. Buat prompt + overlay siap render.",
+                "generate_thumbnail",
+                {
+                    "title": _extract_topic(question),
+                    "style": "bold",
+                    "platform": "youtube",
+                    "render": False,
+                },
+            )
+
+        if _CAMPAIGN_RE.search(question):
+            return (
+                "User minta strategi campaign. Susun AARRR funnel + timeline.",
+                "plan_campaign",
+                {
+                    "product": _extract_topic(question),
+                    "audience": "audiens Indonesia",
+                    "goal": "conversion",
+                    "budget_idr": 1500000,
+                    "duration_days": 30,
+                    "platform_focus": "instagram",
+                },
+            )
+
+        if _ADS_GEN_RE.search(question):
+            return (
+                "User minta ad generator. Buat beberapa variasi ad copy dan pilih terbaik.",
+                "generate_ads",
+                {
+                    "product": _extract_topic(question),
+                    "audience": "audiens Indonesia",
+                    "platform": "facebook",
+                    "objective": "conversion",
+                    "n_variants": 3,
+                },
+            )
+
+        if _COPY_RE.search(question):
+            return (
+                "User minta copy/caption. Generate beberapa varian copy dengan CQF.",
+                "generate_copy",
+                {
+                    "topic": _extract_topic(question),
+                    "channel": "instagram",
+                    "formula": "AIDA",
+                    "audience": "audiens Indonesia",
+                    "tone": "friendly",
+                },
             )
 
         # Math expression di pertanyaan
