@@ -762,8 +762,9 @@ def run_react(
     # Deteksi user minta gambar → langsung panggil text_to_image, skip ReAct.
     # Keywords ID+EN, cover variasi umum: "bikin/buat/generate/create image/gambar/foto/ilustrasi"
     _q_lower = question.lower()
-    _image_verbs = ("bikin", "buat", "buatkan", "generate", "create", "gambarkan", "gambarin", "render", "visualisasikan", "lukiskan")
-    _image_nouns = ("gambar", "foto", "ilustrasi", "image", "picture", "visual", "artwork", "poster", "lukisan", "desain")
+    _image_verbs = ("bikin", "buat", "buatkan", "generate", "create", "gambarkan", "gambarin", "render", "visualisasikan", "lukiskan", "desainkan")
+    _image_nouns = ("gambar", "foto", "ilustrasi", "image", "picture", "visual", "artwork", "poster", "lukisan", "desain",
+                    "thumbnail", "konten", "banner", "feed", "story", "reels", "cover", "wallpaper", "logo", "sticker")
     _has_verb = any(v in _q_lower for v in _image_verbs)
     _has_noun = any(n in _q_lower for n in _image_nouns)
     import logging as _log_fp
