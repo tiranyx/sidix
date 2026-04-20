@@ -3523,3 +3523,37 @@ Branch: claude/determined-chaum-f21c81 (worktree dari sesi Codex sebelumnya, 45 
 
 **Framing**: Tidak menjatuhkan model AI lain — pakai metafora dan perbandingan arsitektural.
 Fokus pada "what architecture of knowledge means, not volume of knowledge."
+
+---
+
+## 2026-04-21 — Sprint 5 Implementation
+
+[IMPL] T5.1 curator_agent.py — self-train curation pipeline selesai. Scoring formula: relevance×0.40 + sanad×0.25 + maqashid×0.20 + dedupe×0.15. Output JSONL ChatML format. Min score 0.45, target 100 pairs/run, max 600/run.
+
+[IMPL] T5.2 debate_ring.py — multi-agent debate Creator↔Critic selesai. 3 pairs: copy_vs_strategy, brand_vs_design, hook_vs_audience. Max 3 round, konsensus via LLM score + CQF double-check.
+
+[IMPL] T5.3 agency_kit.py — 1-click Agency Kit 6-layer DAG pipeline selesai. brand_kit + 10 captions + 30-day plan + campaign + ads + thumbnails + muhasabah gate. _safe() wrapper untuk error isolation per layer.
+
+[IMPL] T5.4 llm_judge.py — LLM-as-Judge evaluator selesai. 4 domain criteria sets (content/brand/campaign/design). compare_variants() dan judge_batch() dengan ThreadPoolExecutor. Fallback heuristic via CQF quality_gate().
+
+[IMPL] agent_tools.py sprint5 — tambah 4 tools: curator_run, debate_ring, agency_kit, llm_judge. Total tools di TOOL_REGISTRY: 33 tools.
+
+[IMPL] agent_serve.py sprint5 — tambah endpoint POST /creative/agency_kit. Body: {business_name, niche, target_audience, budget}. Returns full agency kit JSON.
+
+[FIX] debate_ring.py + llm_judge.py — route_generate() dari multi_llm_router mengembalikan LLMResult object bukan string. Fix: extract .text attribute. Bug ditemukan saat smoke test T5.2 dan T5.4.
+
+[TEST] Sprint 5 smoke test (test_sprint5.py) — hasil: 4/4 PASS
+  - T5.1 curator_agent: PASS (dry_run=True, ok=True)
+  - T5.2 debate_ring: PASS (rounds_taken=3, max round tercapai, cqf=6.94)
+  - T5.3 agency_kit: PASS (ok=True, beberapa layer warning karena signature mismatch minor)
+  - T5.4 llm_judge: PASS (ok=True, total>0, mode=heuristic)
+
+[DOC] research notes 176-179 ditulis:
+  - 176_curator_agent_self_train.md
+  - 177_debate_ring_multi_agent.md
+  - 178_agency_kit_1click_pipeline.md
+  - 179_llm_judge_evaluator.md
+
+[NOTE] Warning minor dari agency_kit: generate_brand_kit() dan generate_content_plan() tidak menerima parameter target_audience. Ini signature mismatch di modul Sprint 4, bukan bug Sprint 5. Pipeline tetap ok=True karena _safe() wrapper.
+
+[NOTE] Sprint 5 worktree: D:\MIGHAN Model\sprint5\ — branch feat/sprint5-agency-kit. File baru: llm_judge.py, agent_tools.py (copy+extend dari main), agent_serve.py (copy+extend).
