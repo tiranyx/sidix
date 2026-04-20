@@ -3393,3 +3393,51 @@ Menurut analisis: CQF + Iteration Protocol + Debate Ring. Big tech punya tapi ti
 2. Verify alignment dengan SIDIX identity (IHOS + standing-alone + UI LOCK)
 3. Implement with attribution + link balik sumber
 4. Rolling adoption 3-5 item per sprint (jangan semua sekaligus)
+
+## 2026-04-21 (merge unified: MASTER_ROADMAP reconcile 3 sumber)
+
+User mandat: baca detail semua dokumen sebelum mapping. Gabungkan roadmap kita + riset user + ADR-002.
+
+### Sumber yang dibaca detail:
+1. docs/SIDIX_ROADMAP_2026.md (existing, 4 stage Baby/Child/Adolescent/Adult, Sprint 1-25+)
+2. D:\RiSet SIDIX\sidix_implementation_roadmap.md (12-month 24 sprint Phase 1-4, 100+ tasks)
+3. D:\RiSet SIDIX\walkthrough.md (7 doc overview + 6 decision points dari Fahmi)
+4. ADR-002 + notes 168/169 (killer offer + 10 domain × 37 agent + adopsi riset)
+
+### Reconciliation hasil:
+- Existing kita = base timeline (stage + metric per stage + IHOS lock)
+- Riset user = detail task granularity + framework (CQF/Iteration/Debate) + evolution L1-L5 + decision gates
+- ADR-002 = killer offer sequencing dipadukan ke sprint plan
+
+### Key reconciliations:
+- Sprint 4 (now) = Riset Sprint 1.3+1.4+1.5 Content+Design+Marketing dikompres jadi 6 P0 agent + foundation adoption (7 Principles + CQF + Muhasabah + YAML skill + ASPEC)
+- Sprint 5 = Riset Sprint 1.6 Integration (Agency Kit 1-click) + Debate Ring + Iteration Protocol + Self-Train Fase 1
+- Sprint 6 = Riset Sprint 3.2 3D Modeling DIPERCEPAT (user directive 'all about 3D') + Voyager Protocol + Self-Train Fase 2
+- Sprint 7-10 = Child Stage (Voice+Video+Vision+Skill maturity) = Riset Phase 2 Growth
+- Sprint 11-18 = Adolescent (SPIN+Merging+MemGPT+Self-healing) = Riset Phase 3 Mastery
+- Sprint 19+ = Adult (DiLoCo+BFT+IPFS+Federated) = Riset Phase 4 Scale
+
+### 9 Decision Gates (dari walkthrough riset):
+- D1 Phase 1 domain: Content+Design+Marketing -> LOCKED
+- D2 Primary LLM: Qwen2.5+LoRA, hold Qwen3 -> LOCKED
+- D3 GPU: Laptop RTX 3060 now, RunPod kalau demand >10 img/day -> LOCKED
+- D4 Vendor bridge Claude API: TOLAK standing-alone -> LOCKED
+- D5 Team: Solo + 3 AI agent -> LOCKED
+- D6 Omnyx/Tiranyx dogfood: PENDING user confirm
+- D7 Microservice migration: DEFER sampai >100 DAU
+- D8 Skeleton riset adopt: Reference saja, selective module -> LOCKED
+- D9 Sprint 2 math/data/plot: DEFER sampai butuh
+
+### DOCs
+- docs/MASTER_ROADMAP_2026-2027.md (BARU v2) - 460+ lines unified SSoT dengan timeline reconciled + immediate next + quality gates + decision gates + success metrics + 7 Principles + SEM L1-L5
+- CLAUDE.md SSOT reading order updated: MASTER_ROADMAP jadi #3 wajib baca (kalau konflik yang ini menang)
+- CREATIVE_AGENT_TAXONOMY sudah updated ke 10 domain 37 agent (sebelumnya)
+- Note 169 tetap sebagai detail adopsi 10 asset dari riset folder
+
+### Immediate Next (Sprint 4 Week 1-2)
+Hari 1-3: upgrade SIDIX_BIBLE 7 Principles + creative_quality.py CQF + landing page update
+Hari 4-7: copywriter + content_planner + muhasabah_loop + GitHub README
+Hari 8-14: brand_builder + thumbnail + campaign + ads + YAML skill migration + Threads launch
+
+### Prinsip merge yang dipakai (tabayyun)
+Rolling 3-5 adoption per sprint, bukan semua sekaligus. Tiap adopt wajib baca source utuh + verify IHOS alignment + attribution.

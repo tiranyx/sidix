@@ -10,9 +10,11 @@ Urutan wajib sebelum kerja apapun:
 
 1. **`CLAUDE.md`** (file ini) — aturan permanen + UI LOCK + IDENTITAS SIDIX.
 2. **`docs/NORTH_STAR.md`** — tujuan akhir SIDIX + release strategy v0.1→v3.0 + lock apa yang tidak berubah. **Baca jika ragu pilih plan.**
-3. **`docs/DEVELOPMENT_RULES.md`** — aturan mengikat untuk agent eksternal + protocol self-development SIDIX. **Ini harus dipatuhi, bukan sekadar dibaca.**
-4. **`docs/SIDIX_ROADMAP_2026.md`** — roadmap 4 stage (Baby/Child/Adolescent/Adult) + sprint plan.
-5. **`docs/SIDIX_CAPABILITY_MAP.md`** — SSoT kapabilitas (apa yang ada, belum wired, belum ada).
+3. **`docs/MASTER_ROADMAP_2026-2027.md`** — **NEW (2026-04-21)**. SSoT unified sprint + agent + self-train + killer offer + decision gates. Merge 3 sumber (ours + riset + ADR). **Kalau konflik dengan dokumen lain, yang ini menang.**
+4. **`docs/DEVELOPMENT_RULES.md`** — aturan mengikat untuk agent eksternal + protocol self-development SIDIX. **Ini harus dipatuhi, bukan sekadar dibaca.**
+5. **`docs/SIDIX_ROADMAP_2026.md`** — roadmap 4 stage original (Baby/Child/Adolescent/Adult). Reference detail, MASTER_ROADMAP yang canonical.
+6. **`docs/CREATIVE_AGENT_TAXONOMY.md`** — 10 domain × 37 agent + CQF + Iteration + Debate pairings.
+7. **`docs/SIDIX_CAPABILITY_MAP.md`** — SSoT kapabilitas teknis (apa yang ada, belum wired, belum ada).
 6. **`docs/HANDOFF_<terbaru>.md`** — strategic handoff.
 7. **`docs/INVENTORY_<terbaru>.md`** — teknis detail + path.
 8. **`docs/SIDIX_BIBLE.md`** — konstitusi 4 pilar.
