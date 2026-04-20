@@ -3506,3 +3506,20 @@ Branch: claude/determined-chaum-f21c81 (worktree dari sesi Codex sebelumnya, 45 
 **Tool count**: 17 (pre-sprint series) → 30 (post hari ini)
 
 **Next**: math_solve (SymPy), data_analyze (pandas), routing ke Qwen2.5-Coder-7B specialist
+
+---
+
+### [DOC] README rewrite + IHOS philosophy + research note 175
+
+**Konteks**: User minta GitHub lebih rapi + penjelasan IHOS lebih keren dari post Reddit.
+
+**Yang dikerjakan**:
+- README.md ditulis ulang total: IHOS philosophical foundation + arsitektur 3 layer +
+  tabel kapabilitas 30 tool + roadmap + cara kontribusi + The Technical Translation of IHOS
+- brain/public/research_notes/175_alquran_sebagai_blueprint_cognitive_system.md:
+  Mapping Al-Qur'an → cognitive system → SIDIX implementation (Zahir/Batin/Hadd/Mathla',
+  Sanad→provenance, Maqashid→objective function, Ijtihad→ReAct, Tadrij→curriculum,
+  Tafakkur/Muhasabah→meta-cognition)
+
+**Framing**: Tidak menjatuhkan model AI lain — pakai metafora dan perbandingan arsitektural.
+Fokus pada "what architecture of knowledge means, not volume of knowledge."
