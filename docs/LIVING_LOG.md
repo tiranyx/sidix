@@ -3622,3 +3622,23 @@ Fokus pada "what architecture of knowledge means, not volume of knowledge."
 [TEST] Setelah semua fix: `/health` → `model_mode: sidix_local`, `model_ready: true`, `tools_available: 35`, `ok: true`. sidix-brain online (pid 144146, uptime stabil). sidix-ui online.
 
 [DOC] Research note `182_standing_alone_principle.md` — dokumentasi lengkap prinsip, masalah yang ditemukan, solusi, batas apa yang boleh/tidak boleh di router, analogi Ollama vs Groq/Gemini.
+
+## 2026-04-21 — GitHub SEO + Branding + HuggingFace + Dual Remote
+
+[IMPL] **Dual remote setup**: setiap `git push` otomatis ke `fahmiwol/sidix` (dev) DAN `tiranyx/sidix` (company public). Setup via `git remote set-url --add --push origin`.
+
+[UPDATE] **README overhaul**: hero headline "Free & Open Source AI Agent", badge row baru (Free/Open Source MIT/Self-Hosted/No Vendor API), HuggingFace badge, tools 30→35, Sprint 4→Sprint 6, standing-alone note di security section.
+
+[UPDATE] **GitHub repo description** (kedua repo): "Free & Open Source AI Agent — Self-Hosted, Self-Learning, No Vendor API. Qwen2.5-7B + LoRA. 35 tools. Built on Islamic Epistemology (IHOS)."
+
+[UPDATE] **GitHub topics** (kedua repo): 20 topics — ai-agent, free, local-ai, qwen, lora, ollama, open-source-ai, self-hosted, epistemology, dll.
+
+[IMPL] **og-image diperbarui di VPS**: layout baru — badge hijau "FREE OPEN SOURCE" pojok kanan, headline emas "Free & Open Source AI Agent". Live di sidixlab.com/og-image.png (57KB, HTTP 200).
+
+[IMPL] **Social preview** diupload manual ke `fahmiwol/sidix` dan `tiranyx/sidix` di GitHub Settings.
+
+[IMPL] **GitHub org Tiranyx dibuat**: `github.com/tiranyx` — PT Tiranyx Digital, email tiranyx.id@gmail.com. Repo `tiranyx/sidix` jadi public-facing company repo.
+
+[IMPL] **HuggingFace account Tiranyx dibuat**: `huggingface.co/Tiranyx`. Model repo `Tiranyx/sidix-lora` dibuat dan model card diupload (`huggingface/README.md`). Full metadata: base_model Qwen2.5-7B-Instruct, tags, license MIT, quick usage Python+Ollama, training details, personas, 35 tools, citation.
+
+[DECISION] Platform identity final: GitHub=`tiranyx`, HuggingFace=`Tiranyx`, domain=`sidixlab.com`, sosmed=`@sidixlab`. User-facing semua lewat tiranyx/Tiranyx, dev tetap di fahmiwol.
