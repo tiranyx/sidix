@@ -19,7 +19,7 @@
     <a href="https://github.com/fahmiwol/sidix/issues"><img src="https://img.shields.io/github/issues/fahmiwol/sidix" alt="Issues" /></a>
     <img src="https://img.shields.io/badge/Model-Qwen2.5--7B + QLoRA-blue" alt="Model" />
     <img src="https://img.shields.io/badge/Tools-35 active-orange" alt="Tools" />
-    <a href="https://huggingface.co/sidixlab"><img src="https://img.shields.io/badge/HuggingFace-sidixlab-FFD21E?logo=huggingface&logoColor=000" alt="HuggingFace" /></a>
+    <a href="https://huggingface.co/Tiranyx"><img src="https://img.shields.io/badge/HuggingFace-Tiranyx-FFD21E?logo=huggingface&logoColor=000" alt="HuggingFace" /></a>
     <a href="./sidix-hafidz-ledger-whitepaper.pdf"><img src="https://img.shields.io/badge/Whitepaper-Proof--of--Hifdz-darkblue" alt="Whitepaper" /></a>
     <a href="https://t.me/sidixlab_bot"><img src="https://img.shields.io/badge/Telegram-Train%20SIDIX-2AABEE?logo=telegram" alt="Telegram Bot" /></a>
   <hr/>
@@ -49,7 +49,7 @@
     <a href="#-quick-start">⚡ Quick Start</a> ·
     <a href="#-the-ihos-foundation">🧠 The Foundation</a> ·
     <a href="#-architecture">🏗️ Architecture</a> ·
-    <a href="https://huggingface.co/sidixlab">🤗 HuggingFace</a> ·
+    <a href="https://huggingface.co/Tiranyx/sidix-lora">🤗 HuggingFace</a> ·
     <a href="#-contribute--train-sidix">🤝 Contribute</a>
   </p>
 </div>
@@ -247,11 +247,11 @@ from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-7B-Instruct")
-model = PeftModel.from_pretrained(base, "sidixlab/sidix-lora")
+model = PeftModel.from_pretrained(base, "Tiranyx/sidix-lora")
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-7B-Instruct")
 ```
 
-👉 [huggingface.co/sidixlab](https://huggingface.co/sidixlab)
+👉 [huggingface.co/Tiranyx/sidix-lora](https://huggingface.co/Tiranyx/sidix-lora)
 
 ---
 
@@ -389,6 +389,6 @@ MIT License — see [LICENSE](LICENSE).
 
 [![Try SIDIX Free](https://img.shields.io/badge/Try%20SIDIX-Free%20%7C%20app.sidixlab.com-brightgreen?style=for-the-badge)](https://app.sidixlab.com)
 [![Star this repo](https://img.shields.io/github/stars/fahmiwol/sidix?style=for-the-badge&color=gold)](https://github.com/fahmiwol/sidix/stargazers)
-[![HuggingFace](https://img.shields.io/badge/HuggingFace-sidixlab-FFD21E?style=for-the-badge&logo=huggingface&logoColor=000)](https://huggingface.co/sidixlab)
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-Tiranyx-FFD21E?style=for-the-badge&logo=huggingface&logoColor=000)](https://huggingface.co/Tiranyx/sidix-lora)
 
 </div>
