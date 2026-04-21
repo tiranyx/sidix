@@ -3660,3 +3660,24 @@ Fokus pada "what architecture of knowledge means, not volume of knowledge."
 [DECISION] Premium file pakai append (bukan overwrite) supaya pairs dari run-run sebelumnya tidak hilang. File tumbuh kumulatif setiap minggu — dataset LoRA premium makin besar.
 
 [DOC] Research note `183_curator_agent_score_gte_85_premium_tier.md` — dokumentasi perubahan, alasan append vs overwrite, hubungan threshold 0.85 (0-1 scale) ↔ 8.5 (0-10 scale di llm_judge), keterbatasan (masih heuristic, llm_judge belum terintegrasi).
+
+## 2026-04-21 — QA, Testing, Verifikasi curator_agent score_gte_85
+
+[FIX] Docstring `run_curation()` diperbarui: hapus `pairs_written` (tidak ada), tambah `premium_pairs_written` + `premium_file` + `elapsed_s` sesuai return dict aktual.
+
+[TEST] `apps/brain_qa/tests/test_sprint6.py` dibuat — 10 test cases:
+  - `log_accepted_output()`: file ditulis, append multiple records
+  - `generate_brand_kit(target_audience=...)`: valid output, empty fallback, missing name error
+  - `run_curation(dry_run=True)`: tidak menulis file apapun
+  - `run_curation()` stats: berisi `premium_pairs_written` + `premium_file` keys
+  - score_gte_85 filter: pairs tertulis ke premium file saat score >= PREMIUM_SCORE
+  - threshold enforcement: pairs di premium file selalu score >= 0.85
+  - append semantics: dua run berurutan menghasilkan file premium yang bertambah
+
+[TEST] Full suite: **14/14 passed, 0.17s** — tidak ada regresi.
+
+[NOTE] Sprint 6 Quick Wins **COMPLETE**. Semua task handoff diselesaikan:
+  T6.1 muhasabah flywheel ✓ | T6.2 target_audience fix ✓ | T6.3 cron endpoint ✓
+  curator_agent score_gte_85 ✓ | test_sprint6 coverage ✓
+
+[NOTE] Sesi berikutnya: **Sprint 6 Full** → pilih salah satu: 3D gen pipeline (L, user directive) ATAU deploy curator ke VPS (S, quick). llm_judge integrasi ke curation loop dijadwalkan Sprint 7.
