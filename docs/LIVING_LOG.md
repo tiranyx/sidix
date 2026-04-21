@@ -3681,3 +3681,9 @@ Fokus pada "what architecture of knowledge means, not volume of knowledge."
   curator_agent score_gte_85 ✓ | test_sprint6 coverage ✓
 
 [NOTE] Sesi berikutnya: **Sprint 6 Full** → pilih salah satu: 3D gen pipeline (L, user directive) ATAU deploy curator ke VPS (S, quick). llm_judge integrasi ke curation loop dijadwalkan Sprint 7.
+
+## 2026-04-21 — 3D Pipeline Architecture Plan (pre-implementation)
+
+[DOC] Research note `184_3d_pipeline_architecture_plan.md` — skeleton arsitektur lengkap Sprint 6 3D pipeline: stack keputusan (Hunyuan3D→Sloyd→Meshy→mock), file structure 5 modul baru, function signature `text_to_3d` + `image_to_3d` + `npc_generator`, urutan implementasi 7 langkah, tabel risiko & mitigasi. Ditulis sebelum sesi tutup agar sesi berikutnya langsung kode tanpa research.
+
+[NOTE] Sesi ditutup. Rate limit 5j = ~18% sisa, reset ~3j. Commits di-push ke fahmiwol/sidix + tiranyx/sidix. Branch: `claude/focused-ardinghelli-5b52ae`. Buat PR ke main sebelum deploy VPS.
