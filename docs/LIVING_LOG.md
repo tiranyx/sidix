@@ -3642,3 +3642,13 @@ Fokus pada "what architecture of knowledge means, not volume of knowledge."
 [IMPL] **HuggingFace account Tiranyx dibuat**: `huggingface.co/Tiranyx`. Model repo `Tiranyx/sidix-lora` dibuat dan model card diupload (`huggingface/README.md`). Full metadata: base_model Qwen2.5-7B-Instruct, tags, license MIT, quick usage Python+Ollama, training details, personas, 35 tools, citation.
 
 [DECISION] Platform identity final: GitHub=`tiranyx`, HuggingFace=`Tiranyx`, domain=`sidixlab.com`, sosmed=`@sidixlab`. User-facing semua lewat tiranyx/Tiranyx, dev tetap di fahmiwol.
+
+## 2026-04-21 — HuggingFace Model Live + Footer Fix
+
+[IMPL] **HuggingFace Tiranyx/sidix-lora LIVE**: semua file LoRA adapter berhasil diupload dari VPS langsung ke HF. Files: `adapter_model.safetensors` (78MB), `adapter_config.json`, `tokenizer.json` (11MB), `tokenizer_config.json`, `chat_template.jinja`, `README.md` (model card). URL: https://huggingface.co/Tiranyx/sidix-lora
+
+[NOTE] 88MB adalah ukuran yang benar untuk LoRA adapter — ini hanya delta weights (perubahan dari base model), bukan full model. Base model Qwen2.5-7B (~15GB) sudah tersedia terpisah di HuggingFace resmi Qwen. User load keduanya via `PeftModel.from_pretrained("Tiranyx/sidix-lora")`.
+
+[FIX] README footer: "Built by Mighan Lab" → "Built by Tiranyx · sidixlab.com". Mighan Lab adalah nama internal/dev, Tiranyx adalah nama perusahaan publik.
+
+[UPDATE] Semua platform SIDIX sekarang konsisten: GitHub=tiranyx, HuggingFace=Tiranyx, domain=sidixlab.com, sosmed=@sidixlab.
