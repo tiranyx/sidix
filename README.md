@@ -12,7 +12,27 @@
     <a href="https://github.com/fahmiwol/sidix/issues"><img src="https://img.shields.io/github/issues/fahmiwol/sidix" alt="Issues" /></a>
     <img src="https://img.shields.io/badge/Model-Qwen2.5--7B + QLoRA-blue" alt="Model" />
     <img src="https://img.shields.io/badge/Tools-30 active-orange" alt="Tools" />
+    <a href="./sidix-hafidz-ledger-whitepaper.pdf"><img src="https://img.shields.io/badge/Whitepaper-Proof--of--Hifdz-darkblue" alt="Whitepaper" /></a>
     <a href="https://t.me/sidixlab_bot"><img src="https://img.shields.io/badge/Telegram-Train%20SIDIX-2AABEE?logo=telegram" alt="Telegram Bot" /></a>
+  <hr/>
+
+<h2>📄 Whitepaper</h2>
+
+<p>
+  <a href="./sidix-hafidz-ledger-whitepaper.pdf"><strong>Proof-of-Hifdz: A Knowledge-Integrity Consensus Mechanism for Self-Evolving Distributed AI</strong></a>
+</p>
+
+<p>
+  A novel consensus mechanism inspired by the 1,400-year-old Hafidz oral transmission system — 
+  translated into a distributed AI architecture where nodes earn participation rights by proving 
+  knowledge integrity, not computational power or capital.
+</p>
+
+<blockquote>
+  <em>To our knowledge, this is the first distributed AI consensus mechanism based on 
+  knowledge preservation rather than compute or stake.</em>
+</blockquote>
+    
   </p>
 
   <p>
