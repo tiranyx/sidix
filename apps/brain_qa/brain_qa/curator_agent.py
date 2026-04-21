@@ -224,7 +224,8 @@ def run_curation(
     Jalankan full curation pipeline.
 
     Returns:
-      {ok, scanned, scored, exported, pairs_written, output_file, warnings}
+      {ok, scanned, scored, exported, premium_pairs_written,
+       output_file, premium_file, elapsed_s, warnings}
     """
     start = time.time()
     _OUT_DIR.mkdir(parents=True, exist_ok=True)
