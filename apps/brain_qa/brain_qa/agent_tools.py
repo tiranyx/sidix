@@ -1250,6 +1250,47 @@ def _tool_llm_judge(args: dict) -> ToolResult:
     )
 
 
+def _tool_prompt_optimizer(args: dict) -> ToolResult:
+    """Optimalkan prompt template agent berdasarkan accepted outputs (L1 Self-Evolution)."""
+    agent = str(args.get("agent", "")).strip()
+    domain = str(args.get("domain", "content")).strip() or "content"
+    force = bool(args.get("force", False))
+    dry_run = bool(args.get("dry_run", False))
+
+    if not agent:
+        return ToolResult(success=False, output="", error="agent wajib diisi (copywriter/brand_builder/campaign_strategist/...)")
+
+    try:
+        from .prompt_optimizer import optimize_prompt
+        result = optimize_prompt(agent=agent, domain=domain, force=force, dry_run=dry_run)
+    except Exception as e:
+        return ToolResult(success=False, output="", error=f"prompt_optimizer gagal: {e}")
+
+    lines = [
+        "# Prompt Optimizer — Hasil",
+        f"- Agent: {result.agent}",
+        f"- Version: v{result.version}",
+        f"- Baseline Score: {result.baseline_score:.2f}",
+        f"- Optimized Score: {result.optimized_score:.2f}",
+        f"- Improvement: {result.improvement:+.2f}",
+        f"- Accepted: {'✅ Ya' if result.accepted else '❌ Tidak (rollback ke versi lama)'}",
+        f"- Demos Used: {result.demos_used}",
+        f"- Status: {result.notes}",
+        f"- Elapsed: {result.elapsed_s}s",
+    ]
+    return ToolResult(
+        success=result.ok,
+        output="\n".join(lines),
+        citations=[{
+            "type": "prompt_optimizer",
+            "agent": result.agent,
+            "version": result.version,
+            "improvement": result.improvement,
+            "accepted": result.accepted,
+        }],
+    )
+
+
 # ── web_fetch — own stack, fetch HTML publik, strip ke markdown/plain ─────────
 _WEB_FETCH_MAX_BYTES = 800_000  # ~800 KB HTML mentah
 _WEB_FETCH_TEXT_LIMIT = 6000    # karakter teks yang dikembalikan ke agent
@@ -2216,6 +2257,20 @@ TOOL_REGISTRY: dict[str, ToolSpec] = {
         params=["content", "brief", "domain"],
         permission="open",
         fn=_tool_llm_judge,
+    ),
+    "prompt_optimizer": ToolSpec(
+        name="prompt_optimizer",
+        description=(
+            "Optimalkan prompt template agent secara otomatis berdasarkan accepted outputs "
+            "(Self-Evolution Level 1). Analisis pola output terbaik → ekstrak few-shot demos "
+            "→ inject ke template → evaluasi improvement. "
+            "Parameter: agent (str: copywriter/brand_builder/campaign_strategist/content_planner/ads_generator), "
+            "domain (str: content|brand|campaign, default content), "
+            "force (bool, override min-sample check), dry_run (bool, simulasi tanpa simpan)."
+        ),
+        params=["agent", "domain", "force", "dry_run"],
+        permission="restricted",
+        fn=_tool_prompt_optimizer,
     ),
 }
 
