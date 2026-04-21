@@ -45,9 +45,11 @@ _CORPUS_DIRS = [
 _OUT_DIR = _BASE.parent / ".data" / "training_curated"
 _SEEN_FILE = _BASE.parent / ".data" / "curator_seen_hashes.json"
 _STATS_FILE = _BASE.parent / ".data" / "curator_stats.json"
+_PREMIUM_FILE = _BASE.parent / ".data" / "lora_premium_pairs.jsonl"
 
 # ── Scoring config ─────────────────────────────────────────────────────────────
 MIN_SCORE = 0.45          # terendah masuk export
+PREMIUM_SCORE = 0.85      # tier premium → lora_premium_pairs.jsonl
 MIN_PAIRS_TARGET = 100    # target per run (warning jika kurang)
 MAX_PAIRS_PER_RUN = 600   # cap supaya file tidak membengkak
 
@@ -268,19 +270,21 @@ def run_curation(
 
     # build training pairs
     all_pairs: list[TrainingPair] = []
+    premium_pairs: list[TrainingPair] = []
     new_hashes: list[str] = []
     for doc in scored_docs:
         if len(all_pairs) >= max_pairs:
             break
-        text_cache: dict[str, str] = {}
         # re-read file untuk konten (jangan simpan semua di memory)
         try:
-            text_cache[doc.path] = Path(doc.path).read_text(encoding="utf-8", errors="ignore")
+            text = Path(doc.path).read_text(encoding="utf-8", errors="ignore")
         except Exception:
             continue
-        pairs = _build_training_pairs(doc, text_cache[doc.path])
+        pairs = _build_training_pairs(doc, text)
         all_pairs.extend(pairs)
         new_hashes.append(doc.content_hash)
+        if doc.score >= PREMIUM_SCORE:
+            premium_pairs.extend(pairs)
 
     warnings: list[str] = []
     if len(all_pairs) < MIN_PAIRS_TARGET:
@@ -296,6 +300,13 @@ def run_curation(
             for pair in all_pairs:
                 f.write(json.dumps(asdict(pair), ensure_ascii=False) + "\n")
 
+        # tulis premium pairs ke file kumulatif (append) untuk LoRA premium tier
+        if premium_pairs:
+            _PREMIUM_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with open(_PREMIUM_FILE, "a", encoding="utf-8") as pf:
+                for pair in premium_pairs:
+                    pf.write(json.dumps(asdict(pair), ensure_ascii=False) + "\n")
+
         # update seen hashes
         seen.update(new_hashes)
         _SEEN_FILE.write_text(json.dumps(list(seen), ensure_ascii=False, indent=2))
@@ -306,7 +317,9 @@ def run_curation(
         "scanned": scanned,
         "scored": len(scored_docs),
         "exported": len(all_pairs),
+        "premium_pairs_written": len(premium_pairs),
         "output_file": output_file,
+        "premium_file": str(_PREMIUM_FILE) if premium_pairs and not dry_run else "",
         "elapsed_s": round(time.time() - start, 2),
         "warnings": warnings,
     }
@@ -315,8 +328,8 @@ def run_curation(
         _STATS_FILE.write_text(json.dumps(stats, ensure_ascii=False, indent=2))
 
     logger.info(
-        "Curation done: scanned=%d scored=%d pairs=%d file=%s",
-        scanned, len(scored_docs), len(all_pairs), output_file,
+        "Curation done: scanned=%d scored=%d pairs=%d premium=%d file=%s",
+        scanned, len(scored_docs), len(all_pairs), len(premium_pairs), output_file,
     )
     return {"ok": True, **stats}
 

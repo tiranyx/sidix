@@ -3652,3 +3652,11 @@ Fokus pada "what architecture of knowledge means, not volume of knowledge."
 [FIX] README footer: "Built by Mighan Lab" → "Built by Tiranyx · sidixlab.com". Mighan Lab adalah nama internal/dev, Tiranyx adalah nama perusahaan publik.
 
 [UPDATE] Semua platform SIDIX sekarang konsisten: GitHub=tiranyx, HuggingFace=Tiranyx, domain=sidixlab.com, sosmed=@sidixlab.
+
+## 2026-04-21 — curator_agent score_gte_85 Premium Tier
+
+[IMPL] **`curator_agent.py` — score_gte_85 premium filter selesai**. Tambah `PREMIUM_SCORE = 0.85` dan `_PREMIUM_FILE = .data/lora_premium_pairs.jsonl`. Di `run_curation()`, pairs dari dokumen dengan composite score ≥ 0.85 otomatis di-append ke file kumulatif premium. Stats baru: `premium_pairs_written` + `premium_file`.
+
+[DECISION] Premium file pakai append (bukan overwrite) supaya pairs dari run-run sebelumnya tidak hilang. File tumbuh kumulatif setiap minggu — dataset LoRA premium makin besar.
+
+[DOC] Research note `183_curator_agent_score_gte_85_premium_tier.md` — dokumentasi perubahan, alasan append vs overwrite, hubungan threshold 0.85 (0-1 scale) ↔ 8.5 (0-10 scale di llm_judge), keterbatasan (masih heuristic, llm_judge belum terintegrasi).
