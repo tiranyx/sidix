@@ -3577,3 +3577,17 @@ Fokus pada "what architecture of knowledge means, not volume of knowledge."
 [NOTE] Kredensial SSH tidak dicatat — hanya dipakai sekali untuk deploy, tidak masuk ke file apapun.
 
 [NOTE] Sprint 5 worktree: D:\MIGHAN Model\sprint5\ — branch feat/sprint5-agency-kit. File baru: llm_judge.py, agent_tools.py (copy+extend dari main), agent_serve.py (copy+extend).
+
+## 2026-04-22 — continual-learning (memori agen + indeks transcript)
+
+[NOTE] Mencatat pekerjaan continual-learning dari sesi agent sebelumnya (sinkron indeks + satu edit `AGENTS.md`).
+
+[UPDATE] `AGENTS.md` — bagian **Learned Workspace Facts**: bullet **brain_qa sudah jalan** ditambah fakta stabil: hasil BM25 di-rerank menurut frontmatter `sanad_tier` per note (`brain_qa/sanad_ranking.py`); setelah mengubah tier, jalankan `python -m brain_qa index` lagi.
+
+[UPDATE] `.cursor/hooks/state/continual-learning-index.json` — indeks inkremental transcript: path+mtime disegarkan untuk semua `.jsonl` Cursor yang ada (termasuk 2 transcript parent baru), path subagent `e829983e` diperbaiki (`43f0`), entri path salah dihapus, satu file Claude di `.claude/projects/` tetap dilacak dengan mtime terbaru.
+
+## 2026-04-22 — onboarding agen lintas tool
+
+[DOC] `AGENTS.md` — tambah heading `#` + tabel **urutan baca wajib** (00_START_HERE → AGENTS → LIVING_LOG → CLAUDE → North Star / MASTER_ROADMAP / CAPABILITY_MAP) + pointer transcript Cursor + pengingat tanpa secret.
+
+[DOC] `docs/00_START_HERE.md` §4 — perluas "Untuk agen AI" dengan inti vs lanjutan vs kewajiban LIVING_LOG, selaras dengan `AGENTS.md`.
